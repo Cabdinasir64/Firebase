@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskMaster - Your To-Do List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .filter-btn.active {
+            background-color: #EFF6FF;
+            color: #1D4ED8;
+        }
+
+        .task-item {
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <!-- App Container -->
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <!-- Header with Welcome Message -->
+        <header class="mb-8 flex items-center justify-between">
+            <div>
+                <h1 id="welcomeMessage" class="text-3xl font-bold text-gray-800 mb-2"></h1>
+                <p class="text-gray-600">What's on your agenda today?</p>
+            </div>
+            <div>
+                <button
+                    class="bg-red-600 text-white py-2 px-3 rounded-lg cursor-pointer transition-all duration-300 hover:bg-red-500 text-xl">LogOut</button>
+            </div>
+        </header>
+
+        <!-- Add Task Form -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <form id="taskForm" class="flex gap-3">
+                <input type="text" id="taskInput" placeholder="Add a new task..."
+                    class="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required>
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-medium transition flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Add
+                </button>
+            </form>
+        </div>
+
+        <!-- Task Filters -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex gap-2">
+                <button id="filterAll" class="filter-btn active px-4 py-2 rounded-lg font-medium">All</button>
+                <button id="filterActive" class="filter-btn px-4 py-2 rounded-lg font-medium">Active</button>
+                <button id="filterCompleted" class="filter-btn px-4 py-2 rounded-lg font-medium">Completed</button>
+            </div>
+            <button id="clearCompleted" class="text-gray-500 hover:text-gray-700 text-sm font-medium">
+                Clear completed
+            </button>
+        </div>
+
+        <!-- Task List -->
+        <div id="taskList" class="bg-white rounded-xl shadow-md overflow-hidden">
+            <!-- Tasks will be added here dynamically -->
+            <div class="p-4 text-center text-gray-500" id="emptyState">
+                <i class="fas fa-tasks text-4xl mb-3 text-gray-300"></i>
+                <p>No tasks yet. Add one above!</p>
+            </div>
+        </div>
+
+        <!-- Stats Footer -->
+        <div class="mt-4 text-sm text-gray-500 flex justify-between">
+            <span id="taskCount">0 items left</span>
+            <span id="completedCount">0 completed</span>
+        </div>
+    </div>
+
+    <!-- Task Item Template (hidden) -->
+    <template id="taskTemplate">
+        <div class="task-item border-b border-gray-100 last:border-0 group">
+            <div class="flex items-center p-4 hover:bg-gray-50 transition">
+                <button
+                    class="complete-btn mr-3 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition">
+                    <i class="fas fa-check text-white text-xs"></i>
+                </button>
+                <span class="task-text flex-1 text-gray-800"></span>
+                <button
+                    class="delete-btn opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition p-1">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQyMN-fYoPCcz3-_t-Xs5vc_w3WcPgmqM",
+            authDomain: "todo-list-f4e75.firebaseapp.com",
+            projectId: "todo-list-f4e75",
+            storageBucket: "todo-list-f4e75.firebasestorage.app",
+            messagingSenderId: "814598309503",
+            appId: "1:814598309503:web:c4e738823d6095ae06214a",
+            measurementId: "G-EDBT521X2K"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+    </script>
+    <script>
+        const FirebaseInfo = () => {
+            firebase.auth().onAuthStateChanged((user) => {
+                let welcomeMessage = document.getElementById("welcomeMessage")
+                if (user) {
+                    welcomeMessage.innerHTML = `Welcome Back ${user.displayName}`
+                } 
+            });
+
+
+        }
+
+        FirebaseInfo()
+
+    </script>
+
+
+</body>
+
+</html>
