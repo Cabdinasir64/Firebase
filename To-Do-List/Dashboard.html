@@ -32,7 +32,7 @@
                 <h1 id="welcomeMessage" class="text-3xl font-bold text-gray-800 mb-2"></h1>
                 <p class="text-gray-600">What's on your agenda today?</p>
             </div>
-            <div onclick="LogOut()">
+            <div id="logoutBtn">
                 <button
                     class="bg-red-600 text-white py-2 px-3 rounded-lg cursor-pointer transition-all duration-300 hover:bg-red-500 text-xl">LogOut</button>
             </div>
@@ -111,38 +111,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
     </script>
-    <script>
-        const FirebaseInfo = () => {
-            firebase.auth().onAuthStateChanged((user) => {
-                let welcomeMessage = document.getElementById("welcomeMessage")
-                if (user) {
-                    welcomeMessage.innerHTML = `Welcome Back ${user.displayName}`
-                }
-            });
-
-
-        }
-        const LogOut = () => {
-            firebase.auth().signOut()
-                .then(() => {
-                    PageLoginAndSignUp()
-
-                })
-                .catch((error) => {
-                    console.log(error)
-                });
-
-        }
-
-        const PageLoginAndSignUp = () => {
-            window.location.href = "TodoList.html"
-        }
-        LogOut()
-        FirebaseInfo()
-
-
-
-    </script>
+    <script src="dashbaord.js"></script>
 
 
 </body>
