@@ -1,0 +1,47 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <div class="p-6">
+        <h1 class="text-3xl font-bold">Welcome to your Dashboard</h1>
+        <p id="user-info" class="mt-4 text-lg"></p>
+        <button id="logout" class="mt-6 bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+            authDomain: "tests-18ea8.firebaseapp.com",
+            projectId: "tests-18ea8",
+            storageBucket: "tests-18ea8.firebasestorage.app",
+            messagingSenderId: "35376357331",
+            appId: "1:35376357331:web:2d70f7605428112b8c1926",
+            measurementId: "G-7G473JZWZG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById("user-info").textContent = `Logged in as: ${user.displayName || user.email}`;
+            } else {
+                window.location.href = "signIn2.html";
+            }
+        });
+
+        document.getElementById("logout").addEventListener("click", async () => {
+            await auth.signOut();
+            window.location.href = "signIn2.html";
+        });
+    </script>
+</body>
+
+</html>
