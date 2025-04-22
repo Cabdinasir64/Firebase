@@ -33,13 +33,13 @@
             if (user) {
                 document.getElementById("user-info").textContent = `Logged in as: ${user.displayName || user.email}`;
             } else {
-                window.location.href = "signIn2.html";
+                window.location.href = "signIn3.html";
             }
         });
 
         document.getElementById("logout").addEventListener("click", async () => {
             await auth.signOut();
-            window.location.href = "signIn2.html";
+            window.location.href = "signIn3.html";
         });
     </script>
 </body>
