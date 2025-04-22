@@ -1,0 +1,98 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+        <h2 class="text-2xl font-bold text-center mb-6">Login</h2>
+        <form id="login-form" class="space-y-4">
+            <input id="email" type="email" placeholder="Email" class="w-full p-3 border rounded-lg" />
+            <input id="password" type="password" placeholder="Password" class="w-full p-3 border rounded-lg" />
+            <button class="w-full bg-blue-500 text-white py-3 rounded-lg">Login</button>
+            <p class="text-sm text-center mt-2">No account? <a href="signUp1.html" class="text-blue-500">Sign up</a></p>
+            <!-- Forgot password link -->
+            <p class="text-sm text-center mt-2">
+                <a href="#" id="forgot-password-link" class="text-blue-500">Forgot Password?</a>
+            </p>
+            <p id="message" class="text-sm text-center mt-2 text-red-500"></p>
+        </form>
+    </div>
+    <!-- Forgot password modal -->
+    <div id="reset-password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg w-full max-w-sm">
+            <h2 class="text-xl font-bold mb-4 text-center">Reset Password</h2>
+            <input id="reset-email" type="email" placeholder="Enter your email"
+                class="w-full p-3 border rounded-lg mb-4" />
+            <button id="send-reset-email" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Send
+                Reset Link</button>
+            <button id="close-modal"
+                class="w-full mt-2 bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400">Cancel</button>
+            <p id="reset-message" class="text-sm text-center mt-2 text-red-500"></p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="signIn1.js"></script>
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGvEd3Cd8E8WwA-wua75q0BVZdpu3dChg",
+            authDomain: "test1-43afc.firebaseapp.com",
+            projectId: "test1-43afc",
+            storageBucket: "test1-43afc.firebasestorage.app",
+            messagingSenderId: "248050517102",
+            appId: "1:248050517102:web:5dcbf069891aa5ca0f127f",
+            measurementId: "G-Q9S4CPM8L0"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const resetModal = document.getElementById('reset-password-modal');
+        const sendResetBtn = document.getElementById('send-reset-email');
+        const closeModal = document.getElementById('close-modal');
+        const resetMessage = document.getElementById('reset-message');
+
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            resetModal.classList.remove("hidden");
+            resetMessage.textContent = "";
+        });
+
+        closeModal.addEventListener('click', () => {
+            resetModal.classList.add("hidden");
+            resetMessage.textContent = "";
+        });
+
+        sendResetBtn.addEventListener('click', async () => {
+            const email = document.getElementById('reset-email').value.trim();
+            resetMessage.classList.remove("text-green-600", "text-red-500");
+
+            if (!email) {
+                resetMessage.textContent = "Please enter your email.";
+                resetMessage.classList.add("text-red-500");
+                return;
+            }
+
+            try {
+                await auth.sendPasswordResetEmail(email);
+                resetMessage.textContent = "Password reset email sent! Check your inbox.";
+                resetMessage.classList.add("text-green-600");
+            } catch (error) {
+                resetMessage.textContent = error.message;
+                resetMessage.classList.add("text-red-500");
+            }
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,68 @@
+<!-- signup.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign up1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+        <h2 class="text-2xl font-bold text-center mb-6">Sign Up</h2>
+        <form id="signup-form" class="space-y-4">
+            <input id="username" type="text" placeholder="Username" class="w-full p-3 border rounded-lg" />
+            <input id="email" type="email" placeholder="Email" class="w-full p-3 border rounded-lg" />
+            <input id="password" type="password" placeholder="Password" class="w-full p-3 border rounded-lg" />
+            <button class="w-full bg-blue-500 text-white py-3 rounded-lg">Create Account</button>
+            <p class="text-sm text-center mt-2">Already have an account? <a href="signIn1.html"
+                    class="text-blue-500">Login</a></p>
+            <p id="message" class="text-sm text-center mt-2 text-red-500"></p>
+        </form>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGvEd3Cd8E8WwA-wua75q0BVZdpu3dChg",
+            authDomain: "test1-43afc.firebaseapp.com",
+            projectId: "test1-43afc",
+            storageBucket: "test1-43afc.firebasestorage.app",
+            messagingSenderId: "248050517102",
+            appId: "1:248050517102:web:5dcbf069891aa5ca0f127f",
+            measurementId: "G-Q9S4CPM8L0"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        const form = document.getElementById("signup-form");
+        const message = document.getElementById("message");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("username").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            message.textContent = "";
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                await user.updateProfile({ displayName: username });
+                await user.sendEmailVerification();
+                await auth.signOut();
+                message.textContent = "Verify your email before logging in.";
+                message.classList.replace("text-red-500", "text-green-600");
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        });
+    </script>
+</body>
+
+</html>
