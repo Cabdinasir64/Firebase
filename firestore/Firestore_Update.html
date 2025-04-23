@@ -41,7 +41,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        let editingId = null; 
+        let editingId = null;
 
         async function addUser() {
             const name = document.getElementById("name").value;
@@ -55,18 +55,15 @@
 
             try {
                 if (editingId) {
-                    // 🔁 Update Existing User
                     await db.collection("users").doc(editingId).update({ name, email, age });
                     alert("User updated!");
                     editingId = null;
                     document.getElementById("submitBtn").textContent = "Add User";
                 } else {
-                    // ➕ Add New User
                     await db.collection("users").add({ name, email, age });
                     alert("User added!");
                 }
 
-                // Clear fields
                 document.getElementById("name").value = "";
                 document.getElementById("email").value = "";
                 document.getElementById("age").value = "";
