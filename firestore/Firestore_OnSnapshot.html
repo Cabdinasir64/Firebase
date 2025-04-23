@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Firestore onSnapshot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-4">Realtime Firestore CRUD</h2>
+
+        <input id="name" type="text" placeholder="Name" class="w-full border p-2 mb-2 rounded" />
+        <input id="email" type="email" placeholder="Email" class="w-full border p-2 mb-2 rounded" />
+        <input id="age" type="number" placeholder="Age" class="w-full border p-2 mb-4 rounded" />
+        <button id="submitBtn" onclick="addOrUpdateUser()"
+            class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+            Add User
+        </button>
+
+        <h3 class="text-xl font-semibold mt-6 mb-2">Users:</h3>
+        <ul id="userList" class="space-y-2"></ul>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+            authDomain: "tests-18ea8.firebaseapp.com",
+            projectId: "tests-18ea8",
+            storageBucket: "tests-18ea8.firebasestorage.app",
+            messagingSenderId: "35376357331",
+            appId: "1:35376357331:web:2d70f7605428112b8c1926",
+            measurementId: "G-7G473JZWZG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let editingId = null;
+
+        function addOrUpdateUser() {
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const age = parseInt(document.getElementById("age").value);
+
+            if (!name || !email || !age) return alert("Fill all fields");
+
+            const data = { name, email, age };
+
+            if (editingId) {
+                db.collection("users").doc(editingId).update(data).then(() => {
+                    clearForm();
+                });
+            } else {
+                db.collection("users").add(data).then(() => {
+                    clearForm();
+                });
+            }
+        }
+
+        function clearForm() {
+            document.getElementById("name").value = "";
+            document.getElementById("email").value = "";
+            document.getElementById("age").value = "";
+            document.getElementById("submitBtn").textContent = "Add User";
+            editingId = null;
+        }
+
+        function deleteUser(id) {
+            db.collection("users").doc(id).delete();
+        }
+
+        function editUser(id, data) {
+            document.getElementById("name").value = data.name;
+            document.getElementById("email").value = data.email;
+            document.getElementById("age").value = data.age;
+            editingId = id;
+            document.getElementById("submitBtn").textContent = "Update User";
+        }
+
+        // 🔴 LIVE LISTENER
+        db.collection("users").onSnapshot(snapshot => {
+            const userList = document.getElementById("userList");
+            userList.innerHTML = "";
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const li = document.createElement("li");
+                li.className = "bg-gray-200 p-2 rounded flex justify-between items-center transition-all duration-300 ease-in-out";
+                li.innerHTML = `
+          <span>${data.name} (${data.age}) - ${data.email}</span>
+          <div class="space-x-2">
+            <button onclick='editUser("${doc.id}", ${JSON.stringify(data)})' class="bg-yellow-500 text-white px-2 py-1 rounded text-sm hover:bg-yellow-600">Edit</button>
+            <button onclick='deleteUser("${doc.id}")' class="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600">Delete</button>
+          </div>
+        `;
+                userList.appendChild(li);
+            });
+        });
+    </script>
+</body>
+
+</html>

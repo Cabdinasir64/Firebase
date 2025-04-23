@@ -111,7 +111,7 @@
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 const li = document.createElement("li");
-                li.className = "bg-gray-200 p-2 rounded flex justify-between items-center";
+                li.className = "bg-gray-200 p-2 rounded flex justify-between items-center ";
                 li.innerHTML = `
       <span>${data.name} (${data.age}) - ${data.email}</span>
       <div class="space-x-2">
