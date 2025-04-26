@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Firestore Where3</title>
+  <title>Firestore Where4</title>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -45,6 +45,11 @@
         </select>
       </div>
 
+      <div>
+        <label class="block mb-1">Limit Results</label>
+        <input type="number" id="limitResults" class="w-full border p-2 rounded" placeholder="Limit number of results">
+      </div>
+
       <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Filter</button>
     </form>
 
@@ -70,7 +75,7 @@
     const userList = document.getElementById('userList');
     const addUsersBtn = document.getElementById('addUsers');
 
-    // Add users to Firestore
+    
     addUsersBtn.addEventListener('click', async () => {
       const users = [
         { name: "Ahmed", gender: "male", age: 25, location: "New York" },
@@ -87,7 +92,7 @@
       alert("Users added ✅");
     });
 
-
+    
     filterForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -95,6 +100,7 @@
       const minAge = parseInt(document.getElementById('minAge').value);
       const maxAge = parseInt(document.getElementById('maxAge').value);
       const location = document.getElementById('location').value;
+      const limitResults = parseInt(document.getElementById('limitResults').value);
 
       let queryRef = db.collection("users");
 
@@ -108,13 +114,22 @@
         queryRef = queryRef.where("age", ">=", minAge);
       }
 
+      
       if (!isNaN(maxAge)) {
         queryRef = queryRef.where("age", "<=", maxAge);
       }
 
-    
+      
       if (location) {
         queryRef = queryRef.where("location", "==", location);
+      }
+
+    
+      queryRef = queryRef.orderBy("age", "desc");
+
+    
+      if (!isNaN(limitResults)) {
+        queryRef = queryRef.limit(limitResults);
       }
 
       const snapshot = await queryRef.get();
