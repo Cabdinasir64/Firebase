@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Search</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="flex items-center justify-center min-h-screen bg-blue-200">
+
+    <div class="bg-white p-4 w-full max-w-xl rounded-lg shadow-sm">
+        <h1 class="font-sans text-center mb-4 pb-2 border-b-2 border-gray-400 text-gray-600 font-bold text-2xl">Search
+            information</h1>
+        <div class="mb-4">
+            <input type="text" placeholder="Search..." id="input"
+                class="rounded-lg w-full border-2 border-gray-400 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2">
+        </div>
+        <div id="result"></div>
+    </div>
+
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+            authDomain: "tests-18ea8.firebaseapp.com",
+            projectId: "tests-18ea8",
+            storageBucket: "tests-18ea8.firebasestorage.app",
+            messagingSenderId: "35376357331",
+            appId: "1:35376357331:web:2d70f7605428112b8c1926",
+            measurementId: "G-7G473JZWZG"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+
+        const input = document.getElementById('input');
+        const result = document.getElementById('result');
+
+        input.addEventListener('input', async () => {
+            const searchTerm = input.value.trim().toLowerCase();
+            result.innerHTML = '';
+
+            if (!searchTerm) return;
+
+            try {
+                const snapshot = await db.collection('users').get();
+
+                const filtered = snapshot.docs.filter(doc => {
+                    const user = doc.data();
+                    return user.name.toLowerCase().includes(searchTerm);
+                });
+
+                if (filtered.length === 0) {
+                    result.innerHTML = '<p class="text-gray-500">No user found.</p>';
+                    return;
+                }
+
+                filtered.forEach(doc => {
+                    const user = doc.data();
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                    <h2 class="text-lg font-bold">${user.name}</h2>
+                    <p class="text-gray-600">${user.age} years old</p>
+                    <p class="text-gray-600">${user.gender} </p>
+                    <p class="text-gray-600">${user.location}  </p>
+                `;
+                    result.appendChild(div);
+                });
+
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        });
+
+
+
+    </script>
+
+</body>
+
+</html>
