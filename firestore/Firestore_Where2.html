@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Firestore Where2</title>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8">
+
+  <div class="max-w-md mx-auto bg-white p-6 rounded shadow-md">
+    <h1 class="text-2xl font-bold mb-4">Add Dummy Users</h1>
+    <button id="addUsers" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-6">Add Users</button>
+
+    <h1 class="text-2xl font-bold mb-4">Filter Users</h1>
+
+    <form id="filterForm" class="space-y-4">
+      <div>
+        <label class="block mb-1">Gender</label>
+        <select id="gender" class="w-full border p-2 rounded">
+          <option value="">-- All --</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block mb-1">Minimum Age</label>
+        <input type="number" id="minAge" class="w-full border p-2 rounded" placeholder="e.g. 18">
+      </div>
+
+      <div>
+        <label class="block mb-1">Maximum Age</label>
+        <input type="number" id="maxAge" class="w-full border p-2 rounded" placeholder="e.g. 30">
+      </div>
+
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Filter</button>
+    </form>
+
+    <div id="userList" class="mt-6 space-y-2"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+      authDomain: "tests-18ea8.firebaseapp.com",
+      projectId: "tests-18ea8",
+      storageBucket: "tests-18ea8.firebasestorage.app",
+      messagingSenderId: "35376357331",
+      appId: "1:35376357331:web:2d70f7605428112b8c1926",
+      measurementId: "G-7G473JZWZG"
+    };
+
+    // ✅ Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const filterForm = document.getElementById('filterForm');
+    const userList = document.getElementById('userList');
+    const addUsersBtn = document.getElementById('addUsers');
+
+    
+    addUsersBtn.addEventListener('click', async () => {
+      const users = [
+        { name: "Ahmed", gender: "male", age: 25 },
+        { name: "Ayaan", gender: "female", age: 21 },
+        { name: "Khadar", gender: "male", age: 30 },
+        { name: "Layla", gender: "female", age: 18 },
+        { name: "Mohamed", gender: "male", age: 17 }
+      ];
+
+      for (let user of users) {
+        await db.collection("users").add(user);
+      }
+
+      alert("Users added ✅");
+    });
+
+
+    filterForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const gender = document.getElementById('gender').value;
+      const minAge = parseInt(document.getElementById('minAge').value);
+      const maxAge = parseInt(document.getElementById('maxAge').value);
+
+      let queryRef = db.collection("users");
+
+      
+      if (gender) {
+        queryRef = queryRef.where("gender", "==", gender);
+      }
+
+    
+      if (!isNaN(minAge)) {
+        queryRef = queryRef.where("age", ">=", minAge);
+      }
+
+      
+      if (!isNaN(maxAge)) {
+        queryRef = queryRef.where("age", "<=", maxAge);
+      }
+
+      const snapshot = await queryRef.get();
+      userList.innerHTML = "";
+
+      if (snapshot.empty) {
+        userList.innerHTML = "<p>No matching users found.</p>";
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const user = doc.data();
+        userList.innerHTML += `
+          <div class="border p-2 rounded shadow-sm">
+            <h2 class="font-semibold">${user.name}</h2>
+            <p>Gender: ${user.gender}</p>
+            <p>Age: ${user.age}</p>
+          </div>
+        `;
+      });
+    });
+  </script>
+
+</body>
+</html>
