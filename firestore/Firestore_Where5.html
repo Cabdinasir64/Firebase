@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Firestore Where5</title>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8">
+
+  <div class="max-w-lg mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">Query Users by Interests</h1>
+
+    <button id="addDummyData" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-6">Add Dummy Users</button>
+
+    <form id="queryForm" class="space-y-4">
+      <div>
+        <label class="block mb-1 font-semibold">Select Operator</label>
+        <select id="operator" class="w-full border p-2 rounded">
+          <option value="in">in</option>
+          <option value="array-contains">array-contains</option>
+          <option value="array-contains-any">array-contains-any</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block mb-1 font-semibold">Enter Interests (comma separated)</label>
+        <input type="text" id="interestInput" class="w-full border p-2 rounded" placeholder="e.g. coding,football,music">
+      </div>
+
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Run Query</button>
+    </form>
+
+    <div id="userList" class="mt-6 space-y-2"></div>
+  </div>
+
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+      authDomain: "tests-18ea8.firebaseapp.com",
+      projectId: "tests-18ea8",
+      storageBucket: "tests-18ea8.firebasestorage.app",
+      messagingSenderId: "35376357331",
+      appId: "1:35376357331:web:2d70f7605428112b8c1926",
+      measurementId: "G-7G473JZWZG"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const addDummyData = document.getElementById('addDummyData');
+    const queryForm = document.getElementById('queryForm');
+    const userList = document.getElementById('userList');
+
+    
+    addDummyData.addEventListener('click', async () => {
+      const users = [
+        { name: "Ahmed", interests: ["coding", "football"] },
+        { name: "Ayaan", interests: ["music", "coding"] },
+        { name: "Khadar", interests: ["football", "traveling"] },
+        { name: "Layla", interests: ["dancing", "football"] },
+        { name: "Mohamed", interests: ["gaming", "coding"] }
+      ];
+
+      for (let user of users) {
+        await db.collection("users").add(user);
+      }
+
+      alert("Dummy users added ✅");
+    });
+
+    
+    queryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const operator = document.getElementById('operator').value;
+      const interestsRaw = document.getElementById('interestInput').value;
+      const interests = interestsRaw.split(',').map(item => item.trim());
+
+      let queryRef = db.collection("users");
+
+      if (operator === "in") {
+        queryRef = queryRef.where("name", "in", interests);
+      } else if (operator === "array-contains") {
+        queryRef = queryRef.where("interests", "array-contains", interests[0]);
+      } else if (operator === "array-contains-any") {
+        queryRef = queryRef.where("interests", "array-contains-any", interests);
+      }
+
+      const snapshot = await queryRef.get();
+      userList.innerHTML = "";
+
+      if (snapshot.empty) {
+        userList.innerHTML = "<p>No matching users found.</p>";
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const user = doc.data();
+        userList.innerHTML += `
+          <div class="border p-2 rounded shadow-sm">
+            <h2 class="font-semibold">${user.name}</h2>
+            <p>Interests: ${user.interests.join(', ')}</p>
+          </div>
+        `;
+      });
+    });
+  </script>
+
+</body>
+</html>
