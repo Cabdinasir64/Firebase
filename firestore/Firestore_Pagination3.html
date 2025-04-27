@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Firestore Pagination3</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8 space-y-6">
+    <div class="w-full max-w-2xl bg-white p-6 rounded-lg shadow-md">
+      <h1 class="text-2xl font-bold mb-4 text-center text-blue-600">Students Pagination</h1>
+
+      <div id="students" class="space-y-4"></div>
+
+      <div class="flex justify-between mt-6">
+        <button id="prevBtn" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Previous</button>
+        <div class="flex gap-x-2" id="buttons"></div>
+        <button id="nextBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Next</button>
+      </div>
+    </div>
+
+    <script>
+      // ✅ Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+        authDomain: "tests-18ea8.firebaseapp.com",
+        projectId: "tests-18ea8",
+        storageBucket: "tests-18ea8.firebasestorage.app",
+        messagingSenderId: "35376357331",
+        appId: "1:35376357331:web:2d70f7605428112b8c1926",
+        measurementId: "G-7G473JZWZG",
+      };
+
+      // ✅ Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      const studentsDiv = document.getElementById("students");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const paginationDiv = document.getElementById("buttons");
+
+      let pageSize = 4;
+      let currentPage = 1;
+      let totalPages = 0;
+      let allStudents = [];
+
+      async function loadAllStudents() {
+        const snapshot = await db.collection("students").orderBy("createdAt").get();
+        allStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        totalPages = Math.ceil(allStudents.length / pageSize);
+        renderPagination();
+        renderPage(currentPage);
+      }
+
+      function renderPage(page) {
+        studentsDiv.innerHTML = "";
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize;
+        const pageStudents = allStudents.slice(start, end);
+
+        pageStudents.forEach(student => {
+          const div = document.createElement("div");
+          div.className = "border p-4 rounded shadow-sm";
+          div.innerHTML = `
+            <h2 class="font-bold text-lg">${student.name}</h2>
+            <p class="text-gray-600">Age: ${student.age}</p>
+          `;
+          studentsDiv.appendChild(div);
+        });
+      }
+
+      function renderPagination() {
+        paginationDiv.innerHTML = "";
+
+        for (let i = 1; i <= totalPages; i++) {
+          const button = document.createElement("button");
+          button.className =
+            i === currentPage
+              ? "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              : "px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500";
+          button.textContent = i;
+          button.addEventListener("click", () => {
+            currentPage = i;
+            renderPage(currentPage);
+            renderPagination();
+          });
+          paginationDiv.appendChild(button);
+        }
+      }
+
+      nextBtn.addEventListener("click", () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderPage(currentPage);
+          renderPagination();
+        }
+      });
+
+      prevBtn.addEventListener("click", () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderPage(currentPage);
+          renderPagination();
+        }
+      });
+
+   
+      loadAllStudents();
+    </script>
+  </body>
+</html>
