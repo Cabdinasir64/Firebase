@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Firestore Pagination2</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body
+    class="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8 space-y-6"
+  >
+    <div class="w-full max-w-2xl bg-white p-6 rounded-lg shadow-md">
+      <h1 class="text-2xl font-bold mb-4 text-center text-blue-600">
+        Students Pagination
+      </h1>
+
+      <div id="students" class="space-y-4"></div>
+
+      <div class="flex justify-between mt-6">
+        <button
+          id="prevBtn"
+          class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+        >
+          Previous
+        </button>
+        <button
+          id="nextBtn"
+          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Next
+        </button>
+      </div>
+
+      <div class="flex justify-center mt-4">
+        <button
+          id="addDummyData"
+          class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          Add Dummy Students
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // ✅ Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+        authDomain: "tests-18ea8.firebaseapp.com",
+        projectId: "tests-18ea8",
+        storageBucket: "tests-18ea8.firebasestorage.app",
+        messagingSenderId: "35376357331",
+        appId: "1:35376357331:web:2d70f7605428112b8c1926",
+        measurementId: "G-7G473JZWZG",
+      };
+
+      // ✅ Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      const studentsDiv = document.getElementById("students");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const addDummyDataBtn = document.getElementById("addDummyData");
+
+      let firstVisible = null;
+      let lastVisible = null;
+      let pageSize = 4;
+      let currentQuery = null;
+
+      const Pagination = async (direction = "initial") => {
+        let query = db
+          .collection("students")
+          .orderBy("createdAt")
+          .limit(pageSize);
+
+        if (direction === "next" && lastVisible) {
+          query = query.startAfter(lastVisible).limit(pageSize);
+        } else if (direction === "prev" && firstVisible) {
+          query = query.endBefore(firstVisible).limitToLast(pageSize);
+        }
+
+        const snapshot = await query.get();
+
+        if (!snapshot.empty) {
+          studentsDiv.innerHTML = "";
+
+          snapshot.forEach((doc) => {
+            const student = doc.data();
+            const div = document.createElement("div");
+            div.className = "border p-4 rounded shadow-sm";
+            div.innerHTML = `
+                        <h2 class="font-bold text-lg">${student.name}</h2>
+                        <p class="text-gray-600">Age: ${student.age}</p>
+                    `;
+            studentsDiv.appendChild(div);
+          });
+
+          firstVisible = snapshot.docs[0];
+          lastVisible = snapshot.docs[snapshot.docs.length - 1];
+          currentQuery = query;
+        } else {
+          if (direction === "next") {
+            alert("No more data to next");
+          } else if (direction === "prev") {
+            alert("No more data to prev");
+          }
+        }
+      };
+      // ✅ Buttons
+      nextBtn.addEventListener("click", () => Pagination("next"));
+      prevBtn.addEventListener("click", () => Pagination("prev"));
+
+      Pagination();
+    </script>
+  </body>
+</html>
