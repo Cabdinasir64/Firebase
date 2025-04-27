@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School Management</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="flex flex-col md:flex-row w-full min-h-screen font-sans p-2 gap-3 bg-gray-100">
+    <!-- Side bar -->
+    <div class="bg-white rounded-lg shadow-md w-full md:w-[350px] p-4 order-2 md:order-1">
+        <div class="flex flex-col space-y-4 h-full">
+            <h2 class="text-xl font-bold text-gray-800">Student Filters</h2>
+
+            <div>
+                <input type="text" placeholder="Search by name or id..."
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    id="input" oninput="applyFilters()" />
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <div class="flex flex-col space-y-2">
+                    <label for="gender" class="font-medium text-gray-700 text-md">Gender</label>
+                    <select name="gender" id="GenderFilter" onchange="applyFilters()"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="All">All</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col space-y-2">
+                    <label for="grade" class="font-medium text-gray-700 text-md">Grade</label>
+                    <select name="grade" id="GradeFilter" onchange="applyFilters()"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="All">All</option>
+                        <option value="GradeA">Grade A</option>
+                        <option value="GradeB">Grade B</option>
+                        <option value="GradeC">Grade C</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col space-y-2">
+                    <label for="class" class="font-medium text-gray-700 text-md">Class</label>
+                    <select name="class" id="ClassFilter" onchange="applyFilters()"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="All">All</option>
+                        <option value="Class1">Class 1</option>
+                        <option value="Class2">Class 2</option>
+                        <option value="Class3">Class 3</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col space-y-2">
+                    <label for="status" class="font-medium text-gray-700 text-md">Status</label>
+                    <select name="status" id="StatusFilter" onchange="applyFilters()"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="All">All</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <button
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
+                    onclick="resetFilters()">
+                    Reset All Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content - hoos marka mobile -->
+    <div class="bg-white rounded-lg shadow-md flex-1 p-4 order-1 md:order-2">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800">Student List</h2>
+            <button
+                class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
+                onclick="openStudentForm()">
+                Add New Student
+            </button>
+        </div>
+
+        <div class="border rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Gender</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="studentsTableBody">
+                    <!-- Student data will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div class="flex items-center justify-between mt-4">
+            <div class="text-sm text-gray-700">
+                Showing <span id="startItem">1</span> to <span id="endItem">10</span> of <span id="totalItems">0</span> students
+            </div>
+            <div class="flex space-x-2">
+                <button id="prevPage" onclick="previousPage()" disabled
+                    class="px-4 py-2 border rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50">
+                    Previous
+                </button>
+                <div id="pageNumbers" class="flex space-x-1">
+                    <!-- Page numbers will be inserted here -->
+                </div>
+                <button id="nextPage" onclick="nextPage()" disabled
+                    class="px-4 py-2 border rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50">
+                    Next
+                </button>
+            </div>
+        </div>
+
+        <!-- Popup Form (hidden by default) -->
+        <div id="studentFormPopup" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black opacity-60"></div>
+
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800" id="formTitle">Add New Student</h3>
+                        <button onclick="closeStudentForm()" class="text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <form id="studentForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="hidden" id="studentId">
+                        
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full
+                                Name*</label>
+                            <input type="text" id="fullName" required
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age*</label>
+                            <input type="number" id="age" required min="5" max="25"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender*</label>
+                            <select id="gender" required
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="studentClass"
+                                class="block text-sm font-medium text-gray-700 mb-1">Class*</label>
+                            <select id="studentClass" required
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Class</option>
+                                <option value="Class1">Class 1</option>
+                                <option value="Class2">Class 2</option>
+                                <option value="Class3">Class 3</option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="grade" class="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+                            <select id="grade"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Grade</option>
+                                <option value="GradeA">Grade A</option>
+                                <option value="GradeB">Grade B</option>
+                                <option value="GradeC">Grade C</option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status*</label>
+                            <select id="status" required
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-2 flex space-x-2">
+                            <button type="submit"
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                                Save Student
+                            </button>
+                            <button type="button" onclick="closeStudentForm()"
+                                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Initialize Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+                authDomain: "tests-18ea8.firebaseapp.com",
+                projectId: "tests-18ea8",
+                storageBucket: "tests-18ea8.appspot.com",
+                messagingSenderId: "35376357331",
+                appId: "1:35376357331:web:2d70f7605428112b8c1926",
+                measurementId: "G-7G473JZWZG",
+            };
+
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+
+            // Global variables
+            let students = [];
+            let filteredStudents = [];
+            let currentPage = 1;
+            let perPage = 10;
+            let editMode = false;
+            let currentEditId = null;
+
+            // DOM elements
+            const studentForm = document.getElementById("studentForm");
+            const studentsTableBody = document.getElementById("studentsTableBody");
+            const prevPageBtn = document.getElementById("prevPage");
+            const nextPageBtn = document.getElementById("nextPage");
+            const pageNumbersContainer = document.getElementById("pageNumbers");
+            const startItemSpan = document.getElementById("startItem");
+            const endItemSpan = document.getElementById("endItem");
+            const totalItemsSpan = document.getElementById("totalItems");
+
+            // Initialize the app
+            document.addEventListener('DOMContentLoaded', () => {
+                getStudents();
+                setupEventListeners();
+            });
+
+            // Set up event listeners
+            function setupEventListeners() {
+                studentForm.addEventListener("submit", handleFormSubmit);
+            }
+
+            // Get students from Firestore
+            const getStudents = async () =>{
+                try {
+                    const snapshot = await db.collection("students").orderBy("createAt", "desc").get();
+                    students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    applyFilters();
+                } catch (error) {
+                    console.error("Error getting students: ", error);
+                    alert("Error loading students. Please check console for details.");
+                }
+            }
+
+            // Apply filters based on user selection
+            function applyFilters() {
+                const searchTerm = document.getElementById("input").value.toLowerCase();
+                const genderFilter = document.getElementById("GenderFilter").value;
+                const statusFilter = document.getElementById("StatusFilter").value;
+                const classFilter = document.getElementById("ClassFilter").value;
+                const gradeFilter = document.getElementById("GradeFilter").value;
+
+                filteredStudents = students.filter(student => {
+                    const matchesSearch = 
+                        student.name.toLowerCase().includes(searchTerm) || 
+                        student.id.toLowerCase().includes(searchTerm);
+                    
+                    const matchesGender = genderFilter === "All" || student.gender === genderFilter;
+                    const matchesStatus = statusFilter === "All" || student.status === statusFilter;
+                    const matchesClass = classFilter === "All" || student.class === classFilter;
+                    const matchesGrade = gradeFilter === "All" || student.grade === gradeFilter;
+
+                    return matchesSearch && matchesGender && matchesStatus && matchesClass && matchesGrade;
+                });
+
+                currentPage = 1; 
+                renderStudents();
+                updatePagination();
+            }
+
+            // Render students to the table
+            function renderStudents() {
+                const startIndex = (currentPage - 1) * perPage;
+                const endIndex = startIndex + perPage;
+                const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+                studentsTableBody.innerHTML = paginatedStudents.map(student => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.age}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.class}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${student.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${student.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.gender}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.grade}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="editStudent('${student.id}')" class="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
+                            <button onclick="deleteStudent('${student.id}')" class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Update pagination info
+                startItemSpan.textContent = filteredStudents.length > 0 ? startIndex + 1 : 0;
+                endItemSpan.textContent = Math.min(endIndex, filteredStudents.length);
+                totalItemsSpan.textContent = filteredStudents.length;
+            }
+
+            // Handle form submission
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                
+                const fullName = document.getElementById("fullName").value;
+                const age = parseInt(document.getElementById("age").value);
+                const gender = document.getElementById("gender").value;
+                const studentClass = document.getElementById("studentClass").value;
+                const grade = document.getElementById("grade").value;
+                const status = document.getElementById("status").value;
+                
+                const studentData = {
+                    name: fullName,
+                    age: age,
+                    gender: gender,
+                    class: studentClass,
+                    grade: grade,
+                    status: status,
+                    createAt: firebase.firestore.FieldValue.serverTimestamp(),
+                };
+
+                try {
+                    if (editMode) {
+                        // Update existing student
+                        await db.collection("students").doc(currentEditId).update(studentData);
+                        alert("Student updated successfully!");
+                    } else {
+                        // Add new student
+                        const docRef = await db.collection("students").add(studentData);
+                        studentData.id = docRef.id;
+                        alert("Student added successfully!");
+                    }
+                    
+                    closeStudentForm();
+                    getStudents(); 
+                } catch (error) {
+                    console.error("Error saving student: ", error);
+                    alert("Error saving student. Please check console for details.");
+                }
+            }
+
+            // Edit student
+            async function editStudent(studentId) {
+                try {
+                    const doc = await db.collection("students").doc(studentId).get();
+                    if (doc.exists) {
+                        const student = doc.data();
+                        
+                        document.getElementById("studentId").value = studentId;
+                        document.getElementById("fullName").value = student.name;
+                        document.getElementById("age").value = student.age;
+                        document.getElementById("gender").value = student.gender;
+                        document.getElementById("studentClass").value = student.class;
+                        document.getElementById("grade").value = student.grade;
+                        document.getElementById("status").value = student.status;
+                        
+                        document.getElementById("formTitle").textContent = "Edit Student";
+                        editMode = true;
+                        currentEditId = studentId;
+                        openStudentForm();
+                    } else {
+                        alert("Student not found!");
+                    }
+                } catch (error) {
+                    console.error("Error getting student: ", error);
+                    alert("Error loading student data. Please check console for details.");
+                }
+            }
+
+            // Delete student
+            async function deleteStudent(studentId) {
+                if (confirm("Are you sure you want to delete this student?")) {
+                    try {
+                        await db.collection("students").doc(studentId).delete();
+                        alert("Student deleted successfully!");
+                        getStudents(); 
+                    } catch (error) {
+                        console.error("Error deleting student: ", error);
+                        alert("Error deleting student. Please check console for details.");
+                    }
+                }
+            }
+
+            // Reset all filters
+            function resetFilters() {
+                document.getElementById("GenderFilter").value = "All";
+                document.getElementById("StatusFilter").value = "All";
+                document.getElementById("ClassFilter").value = "All";
+                document.getElementById("GradeFilter").value = "All";
+                document.getElementById("input").value = "";
+                applyFilters();
+            }
+
+            // Pagination functions
+            function updatePagination() {
+                const totalPages = Math.ceil(filteredStudents.length / perPage);
+                
+                // Update previous/next buttons
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+                
+                // Update page numbers
+                pageNumbersContainer.innerHTML = '';
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.className = `px-4 py-2 border rounded-lg ${currentPage === i ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`;
+                    pageBtn.onclick = () => goToPage(i);
+                    pageNumbersContainer.appendChild(pageBtn);
+                }
+            }
+
+            function goToPage(page) {
+                currentPage = page;
+                renderStudents();
+                updatePagination();
+            }
+
+            function previousPage() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderStudents();
+                    updatePagination();
+                }
+            }
+
+            function nextPage() {
+                const totalPages = Math.ceil(filteredStudents.length / perPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderStudents();
+                    updatePagination();
+                }
+            }
+
+            // Form handling functions
+            function openStudentForm() {
+                document.getElementById("studentFormPopup").classList.remove("hidden");
+                if (!editMode) {
+                    document.getElementById("formTitle").textContent = "Add New Student";
+                    studentForm.reset();
+                }
+            }
+
+            function closeStudentForm() {
+                document.getElementById("studentFormPopup").classList.add("hidden");
+                editMode = false;
+                currentEditId = null;
+                studentForm.reset();
+            }
+        </script>
+</body>
+
+</html>
