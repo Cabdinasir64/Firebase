@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firestore ArrayUnion</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-cyan-100 p-6 h-screen flex justify-center items-center">
+  <div class="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-4">Add or Update User</h2>
+
+    <input id="name" type="text" placeholder="Name" class="w-full border p-2 mb-2 rounded" />
+    <input id="email" type="email" placeholder="Email" class="w-full border p-2 mb-2 rounded" />
+    <input id="age" type="number" placeholder="Age" class="w-full border p-2 mb-2 rounded" />
+    <input id="tag" type="text" placeholder="Add Tag (optional)" class="w-full border p-2 mb-4 rounded" />
+
+    <button onclick="addUser()" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700" id="submitBtn">
+      Add User
+    </button>
+
+    <h3 class="text-xl font-semibold mt-6 mb-2">User List:</h3>
+    <ul id="userList" class="space-y-2"></ul>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+      authDomain: "tests-18ea8.firebaseapp.com",
+      projectId: "tests-18ea8",
+      storageBucket: "tests-18ea8.firebasestorage.app",
+      messagingSenderId: "35376357331",
+      appId: "1:35376357331:web:2d70f7605428112b8c1926",
+      measurementId: "G-7G473JZWZG"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let editingId = null;
+
+    async function addUser() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const age = parseInt(document.getElementById("age").value);
+      const tag = document.getElementById("tag").value.trim();
+
+      if (!name || !email || !age) {
+        alert("Please fill all required fields");
+        return;
+      }
+
+      try {
+        if (editingId) {
+          let updateData = { name, email, age };
+          if (tag) {
+            updateData.tags = firebase.firestore.FieldValue.arrayUnion(tag);
+          }
+
+          await db.collection("users").doc(editingId).update(updateData);
+          alert("User updated!");
+          editingId = null;
+          document.getElementById("submitBtn").textContent = "Add User";
+        } else {
+          let newUser = { name, email, age };
+          if (tag) {
+            newUser.tags = [tag];
+          }
+          await db.collection("users").add(newUser);
+          alert("User added!");
+        }
+
+        // Reset fields
+        document.getElementById("name").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("age").value = "";
+        document.getElementById("tag").value = "";
+
+        loadUsers();
+      } catch (e) {
+        alert("Error saving user");
+        console.error(e);
+      }
+    }
+
+    async function deleteUser(id) {
+      if (confirm("Are you sure you want to delete this user?")) {
+        try {
+          await db.collection("users").doc(id).delete();
+          loadUsers();
+        } catch (err) {
+          alert("Error deleting");
+          console.error(err);
+        }
+      }
+    }
+
+    async function editUser(id) {
+      try {
+        const doc = await db.collection("users").doc(id).get();
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("name").value = data.name;
+          document.getElementById("email").value = data.email;
+          document.getElementById("age").value = data.age;
+          editingId = id;
+          document.getElementById("submitBtn").textContent = "Update User";
+        }
+      } catch (err) {
+        alert("Error loading user for edit");
+        console.error(err);
+      }
+    }
+
+    async function loadUsers() {
+      const userList = document.getElementById("userList");
+      userList.innerHTML = "";
+
+      const snapshot = await db.collection("users").get();
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        li.className = "bg-gray-200 p-2 rounded flex justify-between items-center";
+
+        const tagsDisplay = data.tags ? ` | Tags: [${data.tags.join(", ")}]` : "";
+
+        li.innerHTML = `
+          <span>${data.name} (${data.age}) - ${data.email}${tagsDisplay}</span>
+          <div class="space-x-2">
+            <button onclick="editUser('${doc.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm hover:bg-yellow-600">Edit</button>
+            <button onclick="deleteUser('${doc.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600">Delete</button>
+          </div>
+        `;
+        userList.appendChild(li);
+      });
+    }
+
+    window.onload = loadUsers;
+  </script>
+</body>
+
+</html>
