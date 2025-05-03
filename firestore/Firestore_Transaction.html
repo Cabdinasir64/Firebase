@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firestore Transaction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg">
+        <h2 class="text-2xl font-bold text-center mb-6">Users & Balance Update</h2>
+
+        <select id="userId" class="w-full p-2 mb-4 border rounded-lg">
+            <option value="" disabled selected>Select User</option>
+        </select>
+        
+        <input id="amount" type="number" placeholder="Amount to Add/Remove" class="w-full p-2 mb-4 border rounded-lg" />
+
+        <button onclick="updateBalance()" class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Update Balance
+        </button>
+
+        <p id="status" class="mt-4 text-center text-xl font-semibold"></p>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+            authDomain: "tests-18ea8.firebaseapp.com",
+            projectId: "tests-18ea8",
+            storageBucket: "tests-18ea8.firebasestorage.app",
+            messagingSenderId: "35376357331",
+            appId: "1:35376357331:web:2d70f7605428112b8c1926",
+            measurementId: "G-7G473JZWZG"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function loadUsers() {
+            const userIdSelect = document.getElementById("userId");
+            const snapshot = await db.collection("users").get();
+
+            snapshot.forEach(doc => {
+                const option = document.createElement("option");
+                option.value = doc.id;
+                option.textContent = doc.data().name;
+                userIdSelect.appendChild(option);
+            });
+        }
+
+        async function updateBalance() {
+            const userId = document.getElementById("userId").value;
+            const amount = parseInt(document.getElementById("amount").value);
+            const statusText = document.getElementById("status");
+
+            if (!userId || isNaN(amount)) {
+                statusText.textContent = "Please provide a valid user and amount!";
+                statusText.classList.add("text-red-500");
+                return;
+            }
+
+            const userRef = db.collection("users").doc(userId);
+            try {
+                await db.runTransaction(async (transaction) => {
+                    const userDoc = await transaction.get(userRef);
+
+                    if (!userDoc.exists) {
+                        throw "User does not exist!";
+                    }
+
+                    const currentBalance = userDoc.data().balance || 0;
+
+                    const newBalance = currentBalance + amount;
+
+                    if (newBalance < 0) {
+                        throw "Insufficient balance!";
+                    }
+
+                    transaction.update(userRef, {balance: newBalance });
+                });
+
+                statusText.textContent = "Balance updated successfully!";
+                statusText.classList.add("text-green-500");
+            } catch (error) {
+                statusText.textContent = "Error: " + error;
+                statusText.classList.add("text-red-500");
+            }
+        }
+
+        async function createInitialUsers() {
+            const users = [
+                { name: "John", email: "john@example.com", balance: 100 },
+                { name: "Jane", email: "jane@example.com", balance: 150 },
+                { name: "Bob", email: "bob@example.com", balance: 200 }
+            ];
+
+            for (const user of users) {
+                await db.collection("users").add(user);
+            }
+
+            alert("Initial users created!");
+        }
+
+        window.onload = loadUsers;
+    </script>
+</body>
+</html>

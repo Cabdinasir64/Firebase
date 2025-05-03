@@ -1,0 +1,90 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+</head>
+
+<body class="bg-gradient-to-r from-indigo-500 to-blue-500 h-screen font-sans">
+
+    <header class="fixed top-0 left-0 right-0 z-10 bg-white shadow-md py-3">
+        <div class="container mx-auto flex items-center justify-between px-4 md:px-6 lg:px-8">
+            <div class="flex items-center">
+                <a href="#" class="text-2xl font-bold text-gray-800">Dashboard</a>
+            </div>
+            <div class="flex items-center gap-x-4">
+                <div
+                    class="flex items-center bg-gray-200 rounded-full px-2 py-2 cursor-pointer hover:bg-gray-300 transition duration-300 group relative">
+                    <i class="fa fa-user-circle text-2xl text-gray-800 mr-1"></i>
+                    <span class="text-xl text-gray-500">Profile</span>
+                    <div
+                        class="absolute opacity-0 left-0 top-[55px] group-hover:opacity-100 bg-white shadow-lg rounded-lg mt-2 min-w-[200px] max-w-xs p-2 break-words z-20">
+                        <ul class="flex flex-col space-y-2">
+                            <li
+                                class="flex flex-col border-b pb-2 bg-gray-200 cursor-pointer rounded-lg p-2 text-md text-gray-800">
+                                <span class="font-semibold">Name</span>
+                                <span id="user-name" class="text-sm text-gray-800 break-words mt-1"></span>
+                            </li>
+                            <li
+                                class="flex flex-col border-b pb-2 bg-gray-200 cursor-pointer rounded-lg p-2 text-md text-gray-800">
+                                <span class="font-semibold">Email</span>
+                                <span id="user-email" class="text-sm text-gray-800 break-words mt-1"></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div
+                    class="flex items-center bg-red-500 rounded-full px-2 py-2 cursor-pointer hover:bg-red-600 transition duration-300 group relative">
+                    <i class="fa fa-sign-out-alt text-2xl text-gray-100 mr-2"></i>
+                    <span class="text-xl text-gray-50">LogOut</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+            authDomain: "tests-18ea8.firebaseapp.com",
+            projectId: "tests-18ea8",
+            storageBucket: "tests-18ea8.firebasestorage.app",
+            messagingSenderId: "35376357331",
+            appId: "1:35376357331:web:2d70f7605428112b8c1926",
+            measurementId: "G-7G473JZWZG"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        const Profile = async () => {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    const userDoc = await db.collection("users").doc(user.uid).get();
+                    const userData = userDoc.data();
+                    document.getElementById("user-name").innerText = userData.username || user.displayName || "No Name";
+                    document.getElementById("user-email").innerText = user.email || "No Email";
+                } else {
+                    window.location.href = "login.html";
+                }
+            });
+        };
+        Profile();
+        document.querySelector(".fa-sign-out-alt").parentElement.addEventListener("click", async () => {
+            await auth.signOut();
+            window.location.href = "login.html";
+        });
+    </script>
+
+    </script>
+</body>
+
+</html>
