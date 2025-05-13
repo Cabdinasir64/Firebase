@@ -24,8 +24,7 @@
                         <div class="text-sm text-gray-700">
                             <p class="mb-2"><strong>Name:</strong> <span id="user-name">Loading...</span></p>
                             <p class="mb-4"><strong>Email:</strong> <span id="user-email">Loading...</span></p>
-                            <button onclick="openEditProfileModal()"
-                                class="w-full bg-blue-500 text-white py-1 rounded hover:bg-blue-600">Edit
+                            <button class="w-full bg-blue-500 text-white py-1 rounded hover:bg-blue-600">Edit
                                 Profile</button>
                         </div>
                     </div>
@@ -96,22 +95,6 @@
             document.getElementById("edit-profile-modal").classList.add("hidden");
         }
 
-        async function updateProfile() {
-            const user = auth.currentUser;
-            const newName = document.getElementById("edit-name").value.trim();
-            const newEmail = document.getElementById("edit-email").value.trim();
-
-            if (user) {
-                try {
-                    await db.collection("users").doc(user.uid).update({ username: newName, email: newEmail });
-                    await user.updateEmail(newEmail);
-                    Profile();
-                    closeEditProfileModal();
-                } catch (e) {
-                    alert("Error updating profile: " + e.message);
-                }
-            }
-        }
 
         function Profile() {
             auth.onAuthStateChanged(user => {
