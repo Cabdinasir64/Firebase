@@ -87,50 +87,60 @@
             loadingDiv.style.display = "flex";
 
             try {
-                const productsSnap = await db.collection("products").orderBy("createdAt", "desc").get();
-                main.innerHTML = "";
-                if (productsSnap.empty) {
-                    main.innerHTML = `<p class="text-center text-gray-400 col-span-full">No products available.</p>`;
-                    return;
-                }
+                const query = firebase.firestore().collection("products").orderBy("createdAt", "desc");
 
-                productsSnap.forEach((doc) => {
-                    const product = doc.data();
-                    const card = document.createElement("div");
-                    card.className = "bg-white rounded shadow p-4 h-[200px] hover:shadow-lg transition-shadow duration-300";
-                    card.innerHTML = `
-            <div class="flex flex-col space-y-2">
-              <h3 class="font-semibold text-xl text-gray-800">${product.name}</h3>
-              <p class="text-gray-600 flex-grow">${product.description}</p>
-              <span class="font-bold text-blue-700 text-lg">$${product.price.toFixed(2)}</span>
-            </div>
-            <button class="add-to-cart-btn bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition mt-4" data-id="${doc.id}">Add to Cart</button>
-          `;
-                    main.appendChild(card);
-                });
+                query.onSnapshot((snapshot) => {
+                    main.innerHTML = "";
+                    loadingDiv.style.display = "none";
 
-                document.querySelectorAll(".add-to-cart-btn").forEach((btn) => {
-                    btn.addEventListener("click", async (e) => {
-                        const productId = e.target.dataset.id;
-                        const user = auth.currentUser;
+                    if (snapshot.empty) {
+                        main.innerHTML = `<p class="text-center text-gray-400 col-span-full">No products available.</p>`;
+                        return;
+                    }
 
-                        if (!user) {
-                            alert("Please login to add products to cart.");
-                            return;
-                        }
+                    snapshot.forEach((doc) => {
+                        const product = doc.data();
+                        const card = document.createElement("div");
+                        card.className = "bg-white rounded shadow p-4 h-[200px] hover:shadow-lg transition-shadow duration-300";
+                        card.innerHTML = `
+          <div class="flex flex-col space-y-2">
+            <h3 class="font-semibold text-xl text-gray-800">${product.name}</h3>
+            <p class="text-gray-600 flex-grow">${product.description}</p>
+            <span class="font-bold text-blue-700 text-lg">$${product.price.toFixed(2)}</span>
+          </div>
+          <button class="add-to-cart-btn bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition mt-4" data-id="${doc.id}">Add to Cart</button>
+        `;
+                        main.appendChild(card);
+                    });
 
-                        await addToCartFirestore(user, productId);
-                        alert("Added to cart!");
+                    document.querySelectorAll(".add-to-cart-btn").forEach((btn) => {
+                        btn.addEventListener("click", async (e) => {
+                            const productId = e.target.dataset.id;
+                            const user = firebase.auth().currentUser;
+
+                            if (!user) {
+                                alert("Please login to add products to cart.");
+                                return;
+                            }
+
+                            try {
+                                await addToCartFirestore(user, productId);
+                                alert("Added to cart!");
+                                console.log(user)
+                            } catch (error) {
+                                console.error("Failed to add to cart:", error);
+                                alert("Failed to add to cart.");
+                            }
+                        });
                     });
                 });
-
-            } catch (err) {
-                main.innerHTML = `<p class="text-center text-red-500 col-span-full">Failed to load products.</p>`;
-                console.error(err);
-            } finally {
+            } catch (error) {
                 loadingDiv.style.display = "none";
+                main.innerHTML = `<p class="text-center text-red-500 col-span-full">Failed to load products.</p>`;
+                console.error("Error loading products:", error);
             }
         }
+
 
         async function addToCartFirestore(user, productId) {
             const cartRef = db.collection("users").doc(user.uid).collection("cart").doc(productId);
@@ -202,7 +212,7 @@
         });
 
         function updateNav(user) {
-            if (user.role == "buyer") {
+            if (user) {
                 navRight.innerHTML = `
           <span class="text-gray-700 font-semibold">${user.email}</span>
           <button id="signout-btn" class="ml-4 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">Sign Out</button>
@@ -218,17 +228,38 @@
             }
         }
 
+        async function getUserRole(user) {
+            if (!user) return null;
+            const userDoc = await db.collection("users").doc(user.uid).get();
+            if (userDoc.exists) {
+                return userDoc.data().role || null;
+            }
+            return null;
+        }
+
+
         auth.onAuthStateChanged(async (user) => {
-            updateNav(user);
-            loadProducts();
             if (user) {
+                const role = await getUserRole(user);
+                user.role = role; // add custom role to user object
+
+                if (role !== "buyer") {
+                    await auth.signOut();
+                    return;
+                }
+
+                updateNav(user);
+                loadProducts();
                 await syncCartFromFirestore(user);
             } else {
+                updateNav(null);
+                loadProducts();
                 cart = {};
                 updateCartCount();
                 renderCart();
             }
         });
+
     </script>
 </body>
 
