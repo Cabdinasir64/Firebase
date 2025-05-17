@@ -202,7 +202,7 @@
         });
 
         function updateNav(user) {
-            if (user) {
+            if (user.role == "buyer") {
                 navRight.innerHTML = `
           <span class="text-gray-700 font-semibold">${user.email}</span>
           <button id="signout-btn" class="ml-4 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">Sign Out</button>
