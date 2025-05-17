@@ -1,220 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Seller Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seller Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
+<body class="bg-gray-100 min-h-screen p-6">
 
-<body class="bg-gray-100 min-h-screen p-6 font-sans">
-    <div class="max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold text-indigo-600">Seller Dashboard</h1>
-            <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Logout</button>
-        </div>
+  <div class="max-w-xl mx-auto bg-white shadow-md rounded p-6">
+    <h2 class="text-2xl font-bold mb-4 text-center">Seller Dashboard</h2>
 
-        <!-- Add Product Form -->
-        <div class="bg-white p-6 rounded-lg shadow mb-8">
-            <h2 class="text-xl font-semibold mb-4">Add New Product</h2>
-            <form id="addProductForm" class="space-y-4">
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-                    <input id="name" type="text" placeholder="Product Name" required
-                        class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea id="description" placeholder="Description" required rows="3"
-                        class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
-                </div>
-                <div>
-                    <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
-                    <input id="price" type="number" step="0.01" min="0" placeholder="Price" required
-                        class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <div>
-                    <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                    <input id="image" type="url" placeholder="https://example.com/image.jpg"
-                        class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <button type="submit"
-                    class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Add Product
-                </button>
-            </form>
-        </div>
+    <div id="role-check-message" class="text-center mb-4 text-red-500"></div>
 
-        <!-- Products List -->
-        <div class="bg-white p-6 rounded-lg shadow">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">My Products</h2>
-                <button onclick="loadMyProducts()" class="text-indigo-600 hover:text-indigo-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                            clip-rule="evenodd" />
-                    </svg>
-                </button>
-            </div>
+    <!-- ✅ Product Form -->
+    <div id="product-form" class="hidden">
+      <input id="product-name" type="text" placeholder="Product Name" class="w-full mb-3 p-2 border rounded" />
+      <textarea id="product-description" placeholder="Description" class="w-full mb-3 p-2 border rounded"></textarea>
+      <input id="product-price" type="number" placeholder="Price" class="w-full mb-3 p-2 border rounded" />
 
-            <div id="productList" class="space-y-4">
-                <div class="text-center py-8 text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-gray-400" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 7v10c0 1.1.9 2 2 2h12a2 2 0 002-2V7M4 7l4-4m0 0l4 4m-4-4v18" />
-                    </svg>
-                    Loading products...
-                </div>
-            </div>
-        </div>
+      <button id="add-product-btn" class="bg-green-600 text-white w-full py-2 rounded hover:bg-green-700">Add Product</button>
+      <p id="product-message" class="text-sm mt-4"></p>
     </div>
+  </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
-            authDomain: "tests-18ea8.firebaseapp.com",
-            projectId: "tests-18ea8",
-            storageBucket: "tests-18ea8.appspot.com",
-            messagingSenderId: "35376357331",
-            appId: "1:35376357331:web:2d70f7605428112b8c1926",
-            measurementId: "G-7G473JZWZG"
-        };
+  <!-- ✅ Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
+  <script>
+    // ✅ Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+      authDomain: "tests-18ea8.firebaseapp.com",
+      projectId: "tests-18ea8",
+      storageBucket: "tests-18ea8.appspot.com",
+      messagingSenderId: "35376357331",
+      appId: "1:35376357331:web:2d70f7605428112b8c1926",
+      measurementId: "G-7G473JZWZG"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-        let currentUser = null;
+    const productForm = document.getElementById("product-form");
+    const roleCheckMessage = document.getElementById("role-check-message");
+    const addProductBtn = document.getElementById("add-product-btn");
+    const productMessage = document.getElementById("product-message");
 
-        document.getElementById('addProductForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+    // ✅ Check if user is seller
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        const role = userDoc.data()?.role;
 
-            const name = document.getElementById("name").value.trim();
-            const description = document.getElementById("description").value.trim();
-            const price = parseFloat(document.getElementById("price").value);
-            const image = document.getElementById("image").value.trim() || "https://via.placeholder.com/300";
+        if (role === "seller") {
+          productForm.classList.remove("hidden");
+        } else {
+          roleCheckMessage.textContent = "Access denied: You are not a seller.";
+        }
+      } else {
+        roleCheckMessage.textContent = "Please login to access the seller dashboard.";
+      }
+    });
 
-            if (!name || !description || isNaN(price) || price <= 0) {
-                alert("Please fill all fields with valid values");
-                return;
-            }
+    // ✅ Add Product Logic
+    addProductBtn.addEventListener("click", async () => {
+      const name = document.getElementById("product-name").value.trim();
+      const description = document.getElementById("product-description").value.trim();
+      const price = parseFloat(document.getElementById("product-price").value);
 
-            try {
-                await db.collection("products").add({
-                    name,
-                    description,
-                    price,
-                    image,
-                    ownerId: currentUser.uid,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+      if (!name || !description || isNaN(price)) {
+        productMessage.textContent = "Please fill in all fields.";
+        productMessage.classList.add("text-red-500");
+        return;
+      }
 
-                // Reset form
-                document.getElementById("addProductForm").reset();
-                loadMyProducts();
-            } catch (error) {
-                console.error("Error adding product:", error);
-                alert("Error adding product: " + error.message);
-            }
+      try {
+        const user = auth.currentUser;
+
+        await db.collection("products").add({
+          name,
+          description,
+          price,
+          sellerId: user.uid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        async function loadMyProducts() {
-            const productList = document.getElementById("productList");
-            productList.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 1.1.9 2 2 2h12a2 2 0 002-2V7M4 7l4-4m0 0l4 4m-4-4v18" />
-                    </svg>
-                    Loading products...
-                </div>
-            `;
+        productMessage.textContent = "✅ Product added successfully!";
+        productMessage.classList.remove("text-red-500");
+        productMessage.classList.add("text-green-600");
 
-            try {
-                const snapshot = await db.collection("products")
-                    .where("ownerId", "==", currentUser.uid)
-                    .orderBy("createdAt", "desc")
-                    .get();
+        // Clear form
+        document.getElementById("product-name").value = "";
+        document.getElementById("product-description").value = "";
+        document.getElementById("product-price").value = "";
 
-                if (snapshot.empty) {
-                    productList.innerHTML = `
-                        <div class="text-center py-8 text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                            </svg>
-                            No products found. Add your first product above.
-                        </div>
-                    `;
-                    return;
-                }
-
-                productList.innerHTML = '';
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const div = document.createElement("div");
-                    div.className = "border border-gray-200 p-4 rounded-lg hover:shadow-md transition";
-                    div.innerHTML = `
-                        <div class="flex">
-                            <div class="flex-shrink-0 h-24 w-24 rounded-md overflow-hidden">
-                                <img src="${data.image}" alt="${data.name}" class="h-full w-full object-cover">
-                            </div>
-                            <div class="ml-4 flex-1">
-                                <h3 class="text-lg font-medium text-gray-900">${data.name}</h3>
-                                <p class="mt-1 text-sm text-gray-500 line-clamp-2">${data.description}</p>
-                                <p class="mt-2 text-indigo-600 font-bold">$${data.price.toFixed(2)}</p>
-                            </div>
-                        </div>
-                    `;
-                    productList.appendChild(div);
-                });
-            } catch (error) {
-                console.error("Error loading products:", error);
-                productList.innerHTML = `
-                    <div class="text-center py-8 text-red-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Error loading products. Please try again.
-                    </div>
-                `;
-            }
-        }
-
-        function logout() {
-            auth.signOut().then(() => {
-                window.location.href = "/index.html";
-            }).catch(error => {
-                console.error("Logout error:", error);
-                alert("Logout failed: " + error.message);
-            });
-        }
-
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                // Check if user is seller
-                db.collection("users").doc(user.uid).get().then(doc => {
-                    if (doc.exists && (doc.data().role === "seller" || doc.data().role === "admin")) {
-                        currentUser = user;
-                        loadMyProducts();
-                    } else {
-                        alert("You don't have seller privileges");
-                        window.location.href = "/index.html";
-                    }
-                }).catch(error => {
-                    console.error("Error checking user role:", error);
-                    window.location.href = "Real_Projects/index.html";
-                });
-            } else {
-                window.location.href = "Real_Projects/index.html";
-            }
-        });
-    </script>
+      } catch (error) {
+        productMessage.textContent = error.message;
+        productMessage.classList.add("text-red-500");
+      }
+    });
+  </script>
 </body>
-
 </html>
