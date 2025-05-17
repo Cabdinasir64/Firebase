@@ -7,12 +7,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen p-6">
-
-  <div class="max-w-xl mx-auto bg-white shadow-md rounded p-6">
-    <!-- ✅ Header with user and logout -->
+  <div class="max-w-4xl mx-auto bg-white shadow-md rounded p-6">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold">Seller Dashboard</h2>
-      <div class="text-right">
+      <div>
         <p id="user-email" class="text-sm text-gray-600"></p>
         <button id="logout-btn" class="text-red-600 text-sm underline hover:text-red-800">Sign Out</button>
       </div>
@@ -20,24 +18,26 @@
 
     <div id="role-check-message" class="text-center mb-4 text-red-500"></div>
 
-    <!-- ✅ Product Form -->
     <div id="product-form" class="hidden">
-      <input id="product-name" type="text" placeholder="Product Name" class="w-full mb-3 p-2 border rounded" />
-      <textarea id="product-description" placeholder="Description" class="w-full mb-3 p-2 border rounded"></textarea>
-      <input id="product-price" type="number" placeholder="Price" class="w-full mb-3 p-2 border rounded" />
-
+      <h3 class="font-semibold mb-2">Add New Product</h3>
+      <input id="product-name" type="text" placeholder="Product Name" class="w-full mb-2 p-2 border rounded" />
+      <textarea id="product-description" placeholder="Description" class="w-full mb-2 p-2 border rounded"></textarea>
+      <input id="product-price" type="number" placeholder="Price" class="w-full mb-2 p-2 border rounded" />
       <button id="add-product-btn" class="bg-green-600 text-white w-full py-2 rounded hover:bg-green-700">Add Product</button>
-      <p id="product-message" class="text-sm mt-4"></p>
+      <p id="product-message" class="text-sm mt-2"></p>
+    </div>
+
+    <div id="seller-products" class="mt-6 hidden">
+      <h3 class="text-xl font-semibold mb-4">Your Products</h3>
+      <div id="product-list" class="space-y-4"></div>
     </div>
   </div>
 
-  <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
   <script>
-    // ✅ Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
       authDomain: "tests-18ea8.firebaseapp.com",
@@ -45,53 +45,53 @@
       storageBucket: "tests-18ea8.appspot.com",
       messagingSenderId: "35376357331",
       appId: "1:35376357331:web:2d70f7605428112b8c1926",
-      measurementId: "G-7G473JZWZG"
     };
-    
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     const productForm = document.getElementById("product-form");
-    const roleCheckMessage = document.getElementById("role-check-message");
-    const addProductBtn = document.getElementById("add-product-btn");
+    const sellerProducts = document.getElementById("seller-products");
+    const productList = document.getElementById("product-list");
     const productMessage = document.getElementById("product-message");
     const userEmailDisplay = document.getElementById("user-email");
     const logoutBtn = document.getElementById("logout-btn");
 
-    // ✅ Check if user is seller
     auth.onAuthStateChanged(async user => {
-      if (user) {
-        userEmailDisplay.textContent = user.email;
-
-        const userDoc = await db.collection("users").doc(user.uid).get();
-        const role = userDoc.data()?.role;
-
-        if (role === "seller") {
-          productForm.classList.remove("hidden");
-        } else {
-          roleCheckMessage.textContent = "Access denied: You are not a seller.";
-        }
-      } else {
-        roleCheckMessage.textContent = "Please login to access the seller dashboard.";
+      if (!user) {
+        document.getElementById("role-check-message").textContent = "Please login.";
+        return;
       }
+
+      userEmailDisplay.textContent = user.email;
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      const role = userDoc.data()?.role;
+
+      if (role !== "seller") {
+        document.getElementById("role-check-message").textContent = "Access denied: Not a seller.";
+        return;
+      }
+
+      productForm.classList.remove("hidden");
+      sellerProducts.classList.remove("hidden");
+      loadSellerProducts(user.uid);
     });
 
-    // ✅ Add Product Logic
-    addProductBtn.addEventListener("click", async () => {
+    document.getElementById("add-product-btn").addEventListener("click", async () => {
       const name = document.getElementById("product-name").value.trim();
       const description = document.getElementById("product-description").value.trim();
       const price = parseFloat(document.getElementById("product-price").value);
 
       if (!name || !description || isNaN(price)) {
-        productMessage.textContent = "Please fill in all fields.";
+        productMessage.textContent = "Fill all fields.";
         productMessage.classList.add("text-red-500");
         return;
       }
 
-      try {
-        const user = auth.currentUser;
+      const user = auth.currentUser;
 
+      try {
         await db.collection("products").add({
           name,
           description,
@@ -100,26 +100,87 @@
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        productMessage.textContent = "✅ Product added successfully!";
+        productMessage.textContent = "✅ Product added.";
         productMessage.classList.remove("text-red-500");
         productMessage.classList.add("text-green-600");
 
-        // Clear form
         document.getElementById("product-name").value = "";
         document.getElementById("product-description").value = "";
         document.getElementById("product-price").value = "";
 
-      } catch (error) {
-        productMessage.textContent = error.message;
+        loadSellerProducts(user.uid);
+      } catch (err) {
+        productMessage.textContent = err.message;
         productMessage.classList.add("text-red-500");
       }
     });
 
-    // ✅ Sign out
-    logoutBtn.addEventListener("click", () => {
-      auth.signOut().then(() => {
-        window.location.href = "/eccomerce/login.html"; 
+    async function loadSellerProducts(sellerId) {
+      const snapshot = await db.collection("products").where("sellerId", "==", sellerId).get();
+      productList.innerHTML = "";
+
+      if (snapshot.empty) {
+        productList.innerHTML = "<p class='text-gray-500'>No products found.</p>";
+        return;
+      }
+
+      snapshot.forEach(async doc => {
+        const data = doc.data();
+        const cartUsersSnap = await db.collectionGroup("cart").where("id", "==", doc.id).get();
+        let userEmails = [];
+
+        for (const cartDoc of cartUsersSnap.docs) {
+          const userId = cartDoc.ref.parent.parent.id;
+          const userDoc = await db.collection("users").doc(userId).get();
+          if (userDoc.exists) userEmails.push(userDoc.data().email);
+        }
+
+        const div = document.createElement("div");
+        div.className = "border p-4 rounded shadow";
+        div.innerHTML = `
+          <div class="flex justify-between items-center">
+            <div>
+              <h4 class="text-lg font-semibold">${data.name}</h4>
+              <p class="text-sm text-gray-600">${data.description}</p>
+              <p class="text-blue-700 font-bold mt-1">$${data.price}</p>
+            </div>
+            <div class="space-x-2">
+              <button class="edit-btn text-sm text-blue-600 underline" data-id="${doc.id}" data-name="${data.name}" data-description="${data.description}" data-price="${data.price}">Edit</button>
+              <button class="delete-btn text-sm text-red-600 underline" data-id="${doc.id}">Delete</button>
+            </div>
+          </div>
+          <div class="mt-2 text-sm text-gray-600">
+            Users who added to cart: ${userEmails.length > 0 ? userEmails.join(', ') : 'None'}
+          </div>
+        `;
+        productList.appendChild(div);
       });
+    }
+
+    document.addEventListener("click", async (e) => {
+      if (e.target.classList.contains("delete-btn")) {
+        const id = e.target.dataset.id;
+        await db.collection("products").doc(id).delete();
+        const user = auth.currentUser;
+        loadSellerProducts(user.uid);
+      }
+
+      if (e.target.classList.contains("edit-btn")) {
+        const id = e.target.dataset.id;
+        const name = prompt("New name", e.target.dataset.name);
+        const description = prompt("New description", e.target.dataset.description);
+        const price = parseFloat(prompt("New price", e.target.dataset.price));
+
+        if (name && description && !isNaN(price)) {
+          await db.collection("products").doc(id).update({ name, description, price });
+          const user = auth.currentUser;
+          loadSellerProducts(user.uid);
+        }
+      }
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      auth.signOut().then(() => window.location.href = "/eccomerce/login.html");
     });
   </script>
 </body>
