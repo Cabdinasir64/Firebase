@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seller Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6 font-sans">
+
+  <h1 class="text-3xl font-bold text-indigo-600 mb-6">Seller Dashboard</h1>
+
+  <!-- Add Product Form -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-4">Add New Product</h2>
+    <input id="name" type="text" placeholder="Product Name" class="block mb-2 p-2 border w-full rounded" />
+    <textarea id="description" placeholder="Description" class="block mb-2 p-2 border w-full rounded"></textarea>
+    <input id="price" type="number" placeholder="Price" class="block mb-2 p-2 border w-full rounded" />
+    <button onclick="addProduct()" class="bg-indigo-600 text-white px-4 py-2 rounded">Add Product</button>
+  </div>
+
+  <!-- Products List -->
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="text-xl font-semibold mb-4">My Products</h2>
+    <div id="productList" class="space-y-4">
+      <!-- Products appear here -->
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+      authDomain: "tests-18ea8.firebaseapp.com",
+      projectId: "tests-18ea8",
+      storageBucket: "tests-18ea8.firebasestorage.app",
+      messagingSenderId: "35376357331",
+      appId: "1:35376357331:web:2d70f7605428112b8c1926",
+      measurementId: "G-7G473JZWZG"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    let currentUser = null;
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        loadMyProducts();
+      } else {
+        window.location.href = "/login.html";
+      }
+    });
+
+    async function addProduct() {
+      const name = document.getElementById("name").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const price = parseFloat(document.getElementById("price").value);
+
+      if (!name || !description || isNaN(price)) {
+        alert("Fill all fields");
+        return;
+      }
+
+      try {
+        await db.collection("products").add({
+          name,
+          description,
+          price,
+          ownerId: currentUser.uid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("Product added!");
+        document.getElementById("name").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("price").value = "";
+        loadMyProducts();
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    }
+
+    async function loadMyProducts() {
+      const productList = document.getElementById("productList");
+      productList.innerHTML = "";
+
+      const snapshot = await db.collection("products")
+        .where("ownerId", "==", currentUser.uid)
+        .orderBy("createdAt", "desc")
+        .get();
+
+      if (snapshot.empty) {
+        productList.innerHTML = "<p class='text-gray-600'>No products yet.</p>";
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "border p-4 rounded shadow";
+        div.innerHTML = `
+          <h3 class="text-lg font-bold text-gray-800">${data.name}</h3>
+          <p class="text-sm text-gray-600">${data.description}</p>
+          <p class="text-indigo-600 font-bold mt-1">$${data.price}</p>
+        `;
+        productList.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
