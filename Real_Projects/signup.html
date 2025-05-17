@@ -1,62 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Signup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-<body class="bg-gray-100 flex justify-center items-center h-screen">
-  <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-    <h2 class="text-2xl font-bold mb-4 text-center text-indigo-600">Create Account</h2>
-    <form id="signupForm" class="space-y-4">
-      <input type="email" id="email" placeholder="Email" required class="w-full p-2 border rounded" />
-      <input type="password" id="password" placeholder="Password" required class="w-full p-2 border rounded" />
-      <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">Sign Up</button>
-    </form>
-    <p class="text-center mt-4 text-sm text-gray-600">Already have an account? <a href="Real_Projects\login.html"
-        class="text-indigo-600">Login</a></p>
+  <div class="bg-white p-6 rounded shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-4 text-center">Create Account</h2>
+    
+    <input id="email" type="email" placeholder="Email" class="w-full mb-3 p-2 border rounded" />
+    <input id="password" type="password" placeholder="Password" class="w-full mb-3 p-2 border rounded" />
+    
+    <button id="signup-btn" class="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700">Sign Up</button>
+    
+    <p id="signup-message" class="text-sm text-center mt-4"></p>
   </div>
+
+  <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
   <script>
+    // ✅ Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
       authDomain: "tests-18ea8.firebaseapp.com",
       projectId: "tests-18ea8",
-      storageBucket: "tests-18ea8.firebasestorage.app",
+      storageBucket: "tests-18ea8.appspot.com",
       messagingSenderId: "35376357331",
       appId: "1:35376357331:web:2d70f7605428112b8c1926",
       measurementId: "G-7G473JZWZG"
     };
-
+    
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    document.getElementById('signupForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+    // ✅ Sign Up Logic
+    const signupBtn = document.getElementById("signup-btn");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const message = document.getElementById("signup-message");
+
+    signupBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+        message.textContent = "Email and password are required.";
+        message.classList.add("text-red-500");
+        return;
+      }
 
       try {
+        // ✅ Create user with Firebase Auth
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
-        await db.collection('users').doc(user.uid).set({
+
+        // ✅ Add user to Firestore with role = 'buyer'
+        await db.collection("users").doc(user.uid).set({
           email: user.email,
           role: "buyer",
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert("Signup successful!");
-        window.location.href = "/index.html";
+
+        message.textContent = "Account created successfully!";
+        message.classList.remove("text-red-500");
+        message.classList.add("text-green-600");
+
+        // Optional: redirect
+        // window.location.href = "index.html";
+
       } catch (error) {
-        alert("Error: " + error.message);
+        message.textContent = error.message;
+        message.classList.add("text-red-500");
       }
     });
   </script>
 </body>
-
 </html>
