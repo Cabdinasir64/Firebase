@@ -52,7 +52,7 @@
           </button>
           <div id="authButtons" class="flex space-x-2">
             <a href="/login.html" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Login</a>
-            <a href="/signup.html" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition">Sign Up</a>
+            <a href="Real_Projects/signup.html" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition">Sign Up</a>
           </div>
           <div id="userProfile" class="hidden">
             <button class="flex items-center text-sm rounded-full focus:outline-none">
@@ -257,7 +257,6 @@
           productsContainer.appendChild(card);
         });
         
-        // Add event listeners to all add-to-cart buttons
         document.querySelectorAll('.add-to-cart').forEach(button => {
           button.addEventListener('click', function() {
             addToCart(
@@ -278,14 +277,13 @@
       }
     }
 
-    // Add item to cart
     async function addToCart(id, name, price, image) {
       const user = auth.currentUser;
       
       if (!user) {
         localStorage.setItem('pendingCartItem', JSON.stringify({ id, name, price, image }));
         alert("Please sign in to add items to your cart.");
-        window.location.href = "/signup.html";
+        window.location.href = "Real_Projects/signup.html";
         return;
       }
       
@@ -297,7 +295,6 @@
           quantity: firebase.firestore.FieldValue.increment(1) 
         }, { merge: true });
         
-        // Show success feedback
         const button = event.target;
         button.textContent = 'Added!';
         button.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
@@ -317,7 +314,6 @@
       }
     }
 
-    // Render cart items
     async function renderCart() {
       try {
         cartItems.innerHTML = '';
@@ -381,7 +377,6 @@
             cartItems.appendChild(li);
           });
           
-          // Add event listeners to quantity buttons
           document.querySelectorAll('.decrease-quantity').forEach(button => {
             button.addEventListener('click', function() {
               updateQuantity(this.dataset.id, -1);
@@ -408,7 +403,6 @@
       }
     }
 
-    // Update item quantity (positive or negative delta)
     async function updateQuantity(id, delta) {
       try {
         const user = auth.currentUser;
@@ -437,7 +431,6 @@
       }
     }
 
-    // Remove item from cart
     async function removeFromCart(id) {
       try {
         const user = auth.currentUser;
@@ -452,7 +445,6 @@
       }
     }
 
-    // Update cart count badge
     async function updateCartCount() {
       const user = auth.currentUser;
       if (!user) {
@@ -479,13 +471,11 @@
       }
     }
 
-    // Handle auth state changes
     auth.onAuthStateChanged(async user => {
       if (user) {
         authButtons.classList.add('hidden');
         userProfile.classList.remove('hidden');
         
-        // Handle pending cart item
         const pendingItem = localStorage.getItem('pendingCartItem');
         if (pendingItem) {
           const { id, name, price, image } = JSON.parse(pendingItem);
@@ -508,7 +498,6 @@
       }
     });
 
-    // Initialize the app
     document.addEventListener('DOMContentLoaded', () => {
       fetchProducts();
     });
