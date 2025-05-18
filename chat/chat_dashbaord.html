@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatVerse - Connect with Friends</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <style>
+        .tab-content {
+            transition: opacity 0.3s ease;
+        }
+
+        .message-animation {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .typing-indicator:after {
+            content: '...';
+            animation: typing 1.5s infinite;
+        }
+
+        @keyframes typing {
+            0% {
+                content: '.';
+            }
+
+            33% {
+                content: '..';
+            }
+
+            66% {
+                content: '...';
+            }
+        }
+
+        .online-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .online {
+            background-color: #10B981;
+        }
+
+        .offline {
+            background-color: #EF4444;
+        }
+
+        .away {
+            background-color: #F59E0B;
+        }
+
+        .chat-list-item.active {
+            background-color: #EFF6FF;
+            border-left: 3px solid #3B82F6;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-6xl mx-auto p-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-comments text-blue-500 text-2xl mr-2"></i>
+                <h1 class="text-2xl font-bold text-blue-600">ChatVerse</h1>
+            </div>
+            <button onclick="logout()" class="flex items-center text-gray-600 hover:text-gray-900">
+                <i class="fas fa-sign-out-alt mr-1"></i> Logout
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Sidebar -->
+            <div class="w-full md:w-1/4 bg-white rounded-lg shadow p-4">
+                <div class="flex items-center mb-6">
+                    <img id="user-avatar" src="https://ui-avatars.com/api/?background=random"
+                        class="w-10 h-10 rounded-full mr-3">
+                    <div>
+                        <h2 id="sidebar-username" class="font-medium"></h2>
+                        <div class="flex items-center">
+                            <span id="user-status" class="online-status online"></span>
+                            <span id="user-status-text" class="text-xs text-gray-500">Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="space-y-1 mb-6">
+                    <button onclick="showTab('profile')"
+                        class="tab-btn w-full text-left px-3 py-2 rounded-lg font-medium text-blue-600 bg-blue-50">
+                        <i class="fas fa-user-circle mr-2"></i> Profile
+                    </button>
+                    <button onclick="showTab('friends')"
+                        class="tab-btn w-full text-left px-3 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100">
+                        <i class="fas fa-user-friends mr-2"></i> Friends
+                    </button>
+                    <button onclick="showTab('chat')"
+                        class="tab-btn w-full text-left px-3 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100">
+                        <i class="fas fa-comment-dots mr-2"></i> Chats
+                    </button>
+                </nav>
+
+                <!-- Online Friends -->
+                <div class="border-t border-gray-200 pt-4">
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Online Friends</h3>
+                    <div id="online-friends" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- Main Panel -->
+            <div class="flex-1 bg-white rounded-lg shadow overflow-hidden">
+                <!-- Notification -->
+                <div id="notification" class="hidden p-3 text-center text-white font-medium"></div>
+
+                <!-- Profile Tab -->
+                <div id="profile-tab" class="tab-content p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">Your Profile</h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                <div class="flex items-center">
+                                    <input id="profile-username" type="text"
+                                        class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    <button onclick="updateUsername()"
+                                        class="ml-2 p-2 text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <p id="profile-email" class="p-2 bg-gray-100 rounded-lg text-gray-800"></p>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">User Code</label>
+                                <div class="flex items-center">
+                                    <p id="profile-code" class="flex-1 p-2 bg-gray-100 rounded-lg text-gray-800"></p>
+                                    <button onclick="copyUserCode()" class="ml-2 p-2 text-blue-600 hover:text-blue-800"
+                                        title="Copy">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select id="profile-status"
+                                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="online">Online</option>
+                                    <option value="away">Away</option>
+                                    <option value="offline">Offline</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Change Password</label>
+                                <button onclick="showChangePassword()"
+                                    class="w-full text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                    <i class="fas fa-key mr-2 text-blue-600"></i> Change Password
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Friends Tab -->
+                <div id="friends-tab" class="tab-content p-6 hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">Friends</h2>
+                        <div class="relative w-1/2">
+                            <input type="text" id="friend-search" placeholder="Search friends..."
+                                class="w-full pl-8 p-2 border border-gray-300 rounded-lg">
+                            <i class="fas fa-search absolute left-2 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="flex items-center">
+                            <input type="text" id="add-friend-code" placeholder="Enter 8-digit User Code"
+                                class="flex-1 p-2 border border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500">
+                            <button onclick="addFriend()"
+                                class="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700">
+                                <i class="fas fa-user-plus"></i> Add
+                            </button>
+                        </div>
+                        <div id="friend-status" class="text-sm mt-2 px-2"></div>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-lg font-medium text-gray-800 mb-3">Your Friends</h3>
+                        <div id="friends-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- Chat Tab -->
+                <div id="chat-tab" class="tab-content h-full flex flex-col hidden">
+                    <!-- Chat header -->
+                    <div id="chat-header" class="border-b border-gray-200 p-4 bg-gray-50 hidden">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="relative">
+                                    <img id="chat-friend-avatar" src="" class="w-10 h-10 rounded-full object-cover">
+                                    <span id="chat-friend-status"
+                                        class="online-status absolute bottom-0 right-0"></span>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 id="chat-friend-name" class="font-medium text-gray-900"></h3>
+                                    <p id="chat-friend-typing" class="text-xs text-gray-500 hidden">
+                                        <span class="typing-indicator">typing</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <button onclick="closeChat()" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat list (when no chat is selected) -->
+                    <div id="chat-list-container" class="flex-1 overflow-y-auto p-4">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Your Conversations</h2>
+                        <div id="chat-list" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Messages (when chat is selected) -->
+                    <div id="chat-box" class="hidden flex-1 flex flex-col">
+                        <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+
+                        <!-- Message input -->
+                        <div class="border-t border-gray-200 p-3 bg-gray-50">
+                            <div class="flex items-center">
+                                <input type="text" id="message-input" placeholder="Type a message..."
+                                    class="flex-1 p-2 border border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500">
+                                <button onclick="sendMessage()"
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                            <div class="flex justify-between mt-2">
+                                <div class="text-xs text-gray-500">
+                                    Press Enter to send, Shift+Enter for new line
+                                </div>
+                                <button onclick="toggleEmojiPicker()" class="text-gray-500 hover:text-gray-700">
+                                    <i class="far fa-smile"></i>
+                                </button>
+                            </div>
+                            <div id="emoji-picker"
+                                class="hidden absolute bottom-16 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-2 w-64 h-40 overflow-y-auto">
+                                <!-- Emojis will be inserted here by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="change-password-modal"
+        class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Change Password</h3>
+                <button onclick="hideChangePassword()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                    <input id="current-password" type="password" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input id="new-password" type="password" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <input id="confirm-password" type="password" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div id="password-error" class="text-sm text-red-600 hidden"></div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="hideChangePassword()"
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button onclick="updatePassword()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+            authDomain: "tests-18ea8.firebaseapp.com",
+            projectId: "tests-18ea8",
+            storageBucket: "tests-18ea8.appspot.com",
+            messagingSenderId: "35376357331",
+            appId: "1:35376357331:web:2d70f7605428112b8c1926",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
+        let currentChatFriendId = null;
+        let currentChatFriendData = null;
+        let unsubscribeMessages = null;
+        let unsubscribeTyping = null;
+        let isTyping = false;
+        let lastTypingTime = 0;
+        let typingTimeout;
+        let friendsUnsubscribe = null;
+        let onlineFriendsUnsubscribe = null;
+        let chatsUnsubscribe = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            auth.onAuthStateChanged(handleAuthStateChange);
+        });
+
+        function setupEventListeners() {
+            // Message input events for typing indicators
+            document.getElementById('message-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+                updateTyping();
+            });
+
+            document.getElementById('message-input').addEventListener('keyup', updateTyping);
+
+            // Friend search functionality
+            document.getElementById('friend-search').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const friends = document.querySelectorAll('#friends-list li');
+
+                friends.forEach(friend => {
+                    const name = friend.querySelector('span').textContent.toLowerCase();
+                    if (name.includes(searchTerm)) {
+                        friend.style.display = 'flex';
+                    } else {
+                        friend.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        function handleAuthStateChange(user) {
+            if (!user) {
+                window.location.href = "chat.html";
+                return;
+            }
+
+            currentUser = user;
+            loadUserProfile();
+            showTab('chat');
+
+            // Set user as online
+            updateUserStatus('online');
+
+            // Listen for window close to set status to offline
+            window.addEventListener('beforeunload', () => {
+                updateUserStatus('offline');
+            });
+        }
+
+        async function loadUserProfile() {
+            try {
+                const doc = await db.collection("users").doc(currentUser.uid).get();
+                if (!doc.exists) {
+                    console.error("User document not found");
+                    return;
+                }
+
+                const data = doc.data();
+
+                // Safely update elements if they exist
+                const safeSetText = (id, text) => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = text;
+                };
+
+                safeSetText("profile-name", data.username || "");
+                safeSetText("profile-email", data.email || "");
+                safeSetText("profile-code", data.userCode || "");
+                safeSetText("sidebar-username", data.username || "");
+
+                const usernameInput = document.getElementById("profile-username");
+                if (usernameInput) usernameInput.value = data.username || "";
+
+                const statusSelect = document.getElementById("profile-status");
+                if (statusSelect) statusSelect.value = data.status || 'online';
+
+                // Set avatar
+                const avatar = document.getElementById("user-avatar");
+                if (avatar) {
+                    avatar.src = data.photoURL ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username || "")}&background=random`;
+                }
+
+                // Update status indicator
+                updateStatusIndicator(data.status || 'online');
+
+                // Load friends and chats
+                loadFriends();
+                loadChats();
+                loadOnlineFriends();
+            } catch (error) {
+                console.error("Error loading user profile:", error);
+                showNotification("Error loading profile data", false);
+            }
+        }
+
+        function updateStatusIndicator(status) {
+            const indicator = document.getElementById('user-status');
+            const statusText = document.getElementById('user-status-text');
+
+            indicator.className = 'online-status ' + status;
+            statusText.innerText = status.charAt(0).toUpperCase() + status.slice(1);
+
+            // Update status text color based on status
+            if (status === 'online') {
+                statusText.className = 'text-xs text-green-600';
+            } else if (status === 'away') {
+                statusText.className = 'text-xs text-yellow-600';
+            } else {
+                statusText.className = 'text-xs text-gray-500';
+            }
+        }
+
+        async function updateUserStatus(status) {
+            await db.collection("users").doc(currentUser.uid).update({
+                status,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            updateStatusIndicator(status);
+        }
+
+        function loadFriends() {
+            // Unsubscribe previous listener if exists
+            if (friendsUnsubscribe) friendsUnsubscribe();
+
+            friendsUnsubscribe = db.collection("users").doc(currentUser.uid)
+                .collection("friends")
+                .onSnapshot(async snapshot => {
+                    const list = document.getElementById("friends-list");
+                    list.innerHTML = "";
+
+                    const friendPromises = snapshot.docs.map(async doc => {
+                        const friendId = doc.id;
+                        const friendDoc = await db.collection("users").doc(friendId).get();
+                        return { id: friendId, ...friendDoc.data() };
+                    });
+
+                    const friends = await Promise.all(friendPromises);
+
+                    friends.forEach(friend => {
+                        const li = document.createElement("li");
+                        li.className = "flex justify-between items-center p-3 hover:bg-gray-50 rounded-lg transition-colors";
+                        li.innerHTML = `
+              <div class="flex items-center">
+                <div class="relative mr-3">
+                  <img src="${friend.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.username)}&background=random`}" 
+                    class="w-10 h-10 rounded-full object-cover">
+                  <span class="online-status ${friend.status || 'offline'}"></span>
+                </div>
+                <span>${friend.username}</span>
+              </div>
+              <button onclick="openChat('${friend.id}', '${friend.username}')" 
+                class="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors">
+                <i class="fas fa-comment-dots"></i>
+              </button>
+            `;
+                        list.appendChild(li);
+                    });
+                });
+        }
+
+        function loadOnlineFriends() {
+            if (onlineFriendsUnsubscribe) onlineFriendsUnsubscribe();
+
+            onlineFriendsUnsubscribe = db.collection("users")
+                .where("status", "==", "online")
+                .onSnapshot(snapshot => {
+                    const onlineFriendsContainer = document.getElementById("online-friends");
+                    onlineFriendsContainer.innerHTML = "";
+
+                    snapshot.docs.forEach(doc => {
+                        if (doc.id === currentUser.uid) return;
+
+                        const user = doc.data();
+                        const div = document.createElement("div");
+                        div.className = "flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer";
+                        div.innerHTML = `
+              <div class="relative mr-3">
+                <img src="${user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random`}" 
+                  class="w-8 h-8 rounded-full object-cover">
+                <span class="online-status online"></span>
+              </div>
+              <span class="text-sm">${user.username}</span>
+            `;
+                        div.addEventListener('click', () => openChat(doc.id, user.username));
+                        onlineFriendsContainer.appendChild(div);
+                    });
+                });
+        }
+
+        function loadChats() {
+            if (chatsUnsubscribe) chatsUnsubscribe();
+
+            chatsUnsubscribe = db.collection("chats")
+                .where("participants", "array-contains", currentUser.uid)
+                .orderBy("lastMessageTime", "desc")
+                .onSnapshot(async snapshot => {
+                    const chatList = document.getElementById("chat-list");
+                    chatList.innerHTML = "";
+
+                    const chatPromises = snapshot.docs.map(async doc => {
+                        const chatData = doc.data();
+                        const friendId = chatData.participants.find(id => id !== currentUser.uid);
+                        const friendDoc = await db.collection("users").doc(friendId).get();
+                        return { id: doc.id, ...chatData, friend: friendDoc.data(), friendId };
+                    });
+
+                    const chats = await Promise.all(chatPromises);
+
+                    chats.forEach(chat => {
+                        const lastMessageTime = chat.lastMessageTime?.toDate();
+                        const timeString = lastMessageTime ? formatTime(lastMessageTime) : '';
+
+                        const div = document.createElement("div");
+                        div.className = `flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer chat-list-item ${currentChatFriendId === chat.friendId ? 'active' : ''}`;
+                        div.innerHTML = `
+              <div class="relative mr-3">
+                <img src="${chat.friend.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.friend.username)}&background=random`}" 
+                  class="w-12 h-12 rounded-full object-cover">
+                <span class="online-status ${chat.friend.status || 'offline'}"></span>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-center">
+                  <h3 class="font-medium">${chat.friend.username}</h3>
+                  <span class="text-xs text-gray-500">${timeString}</span>
+                </div>
+                <p class="text-sm text-gray-500 truncate">${chat.lastMessage || 'No messages yet'}</p>
+              </div>
+            `;
+                        div.addEventListener('click', () => openChat(chat.friendId, chat.friend.username));
+                        chatList.appendChild(div);
+                    });
+                });
+        }
+
+        function openChat(friendId, friendName) {
+            // Close current chat if exists
+            if (unsubscribeMessages) unsubscribeMessages();
+            if (unsubscribeTyping) unsubscribeTyping();
+
+            currentChatFriendId = friendId;
+            currentChatFriendData = { id: friendId, name: friendName };
+
+            // Update UI
+            document.getElementById("chat-list-container").classList.add("hidden");
+            document.getElementById("chat-box").classList.remove("hidden");
+            document.getElementById("chat-header").classList.remove("hidden");
+
+            // Set chat header info
+            document.getElementById("chat-friend-name").innerText = friendName;
+
+            // Mark chat list item as active
+            document.querySelectorAll('.chat-list-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`.chat-list-item[data-friend-id="${friendId}"]`)?.classList.add('active');
+
+            // Load messages
+            loadMessages(friendId);
+
+            // Listen for typing indicators
+            listenForTyping(friendId);
+        }
+
+        function closeChat() {
+            if (unsubscribeMessages) unsubscribeMessages();
+            if (unsubscribeTyping) unsubscribeTyping();
+
+            currentChatFriendId = null;
+            currentChatFriendData = null;
+
+            document.getElementById("chat-list-container").classList.remove("hidden");
+            document.getElementById("chat-box").classList.add("hidden");
+            document.getElementById("chat-header").classList.add("hidden");
+        }
+
+        function loadMessages(friendId) {
+            const messagesBox = document.getElementById("messages");
+            messagesBox.innerHTML = "";
+
+            const chatId = getChatId(currentUser.uid, friendId);
+
+            // Unsubscribe any existing listener
+            if (unsubscribeMessages) unsubscribeMessages();
+
+            unsubscribeMessages = db.collection("chats")
+                .doc(chatId)
+                .collection("messages")
+                .orderBy("timestamp")
+                .onSnapshot(snapshot => {
+                    // Clear only if this is a new snapshot, not just updates
+                    if (snapshot.metadata.hasPendingWrites === false) {
+                        messagesBox.innerHTML = "";
+                    }
+
+                    snapshot.forEach(doc => {
+                        displayMessage(doc);
+                    });
+
+                    // Scroll to bottom
+                    messagesBox.scrollTop = messagesBox.scrollHeight;
+                }, error => {
+                    console.error("Message listener error:", error);
+                });
+        }
+
+        function displayMessage(doc) {
+            const msg = doc.data();
+            const messagesBox = document.getElementById("messages");
+
+            const time = msg.timestamp?.toDate();
+            const timeString = time ? formatTime(time) : '';
+
+            const isCurrentUser = msg.sender === currentUser.uid;
+
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `flex ${isCurrentUser ? 'justify-end' : 'justify-start'} message-animation`;
+
+            messageDiv.innerHTML = `
+        <div class="max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 ${isCurrentUser ? 'bg-blue-100' : 'bg-gray-200'}">
+          <div class="flex items-end ${isCurrentUser ? 'justify-end' : 'justify-start'}">
+            ${!isCurrentUser ? `
+              <span class="text-xs font-medium text-gray-700 mr-2">${currentChatFriendData.name}</span>
+            ` : ''}
+            <span class="text-xs text-gray-500">${timeString}</span>
+          </div>
+          <p class="mt-1">${msg.text}</p>
+          ${isCurrentUser ? `
+            <div class="flex justify-end mt-1">
+              <button onclick="deleteMessage('${doc.id}')" class="text-xs text-red-500 hover:text-red-700">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+            messagesBox.appendChild(messageDiv);
+        }
+
+        function listenForTyping(friendId) {
+            const typingIndicator = document.getElementById("chat-friend-typing");
+
+            unsubscribeTyping = db.collection("chats")
+                .doc(getChatId(currentUser.uid, friendId))
+                .collection("typing")
+                .doc(friendId)
+                .onSnapshot(doc => {
+                    if (doc.exists && doc.data().isTyping) {
+                        typingIndicator.classList.remove("hidden");
+                    } else {
+                        typingIndicator.classList.add("hidden");
+                    }
+                });
+        }
+
+        function updateTyping() {
+            if (!currentChatFriendId) return;
+
+            const input = document.getElementById("message-input");
+            const chatId = getChatId(currentUser.uid, currentChatFriendId);
+
+            if (input.value.length > 0) {
+                if (!isTyping) {
+                    isTyping = true;
+                    db.collection("chats").doc(chatId)
+                        .collection("typing").doc(currentUser.uid)
+                        .set({ isTyping: true });
+                }
+
+                lastTypingTime = Date.now();
+
+                if (typingTimeout) clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    if (Date.now() - lastTypingTime > 3000) {
+                        db.collection("chats").doc(chatId)
+                            .collection("typing").doc(currentUser.uid)
+                            .set({ isTyping: false });
+                        isTyping = false;
+                    }
+                }, 3000);
+            } else {
+                if (isTyping) {
+                    db.collection("chats").doc(chatId)
+                        .collection("typing").doc(currentUser.uid)
+                        .set({ isTyping: false });
+                    isTyping = false;
+                }
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById("message-input");
+            const text = input.value.trim();
+
+            if (!text || !currentChatFriendId) return;
+
+            const chatId = getChatId(currentUser.uid, currentChatFriendId);
+
+            try {
+                // Create chat document if it doesn't exist
+                await db.collection("chats").doc(chatId).set({
+                    participants: [currentUser.uid, currentChatFriendId],
+                    lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                // Add message to chat
+                await db.collection("chats").doc(chatId)
+                    .collection("messages")
+                    .add({
+                        text,
+                        sender: currentUser.uid,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                // Update last message in chat document
+                await db.collection("chats").doc(chatId).update({
+                    lastMessage: text,
+                    lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Clear input
+                input.value = "";
+
+                // Stop typing indicator
+                if (isTyping) {
+                    db.collection("chats").doc(chatId)
+                        .collection("typing").doc(currentUser.uid)
+                        .set({ isTyping: false });
+                    isTyping = false;
+                }
+
+            } catch (error) {
+                console.error("Error sending message:", error);
+                showNotification("Failed to send message", false);
+            }
+        }
+
+        async function deleteMessage(messageId) {
+            if (!currentChatFriendId) return;
+
+            const chatId = getChatId(currentUser.uid, currentChatFriendId);
+            await db.collection("chats").doc(chatId)
+                .collection("messages").doc(messageId).delete();
+        }
+
+        async function addFriend() {
+            const codeInput = document.getElementById("add-friend-code");
+            const code = codeInput.value.trim();
+            const statusElement = document.getElementById("friend-status");
+
+            if (!code || code.length !== 8) {
+                statusElement.innerText = "Please enter a valid 8-digit code";
+                statusElement.className = "text-sm mt-2 px-2 text-red-500";
+                return;
+            }
+
+            // Check if user is trying to add themselves
+            const userDoc = await db.collection("users").doc(currentUser.uid).get();
+            if (userDoc.data().userCode === code) {
+                statusElement.innerText = "You can't add yourself as a friend";
+                statusElement.className = "text-sm mt-2 px-2 text-red-500";
+                return;
+            }
+
+            // Check if friend already exists
+            const existingFriend = await db.collection("users").doc(currentUser.uid)
+                .collection("friends").where("userCode", "==", code).get();
+
+            if (!existingFriend.empty) {
+                statusElement.innerText = "This user is already your friend";
+                statusElement.className = "text-sm mt-2 px-2 text-yellow-500";
+                return;
+            }
+
+            // Find user by code
+            const snapshot = await db.collection("users").where("userCode", "==", code).get();
+
+            if (snapshot.empty) {
+                statusElement.innerText = "User not found with this code";
+                statusElement.className = "text-sm mt-2 px-2 text-red-500";
+                return;
+            }
+
+            const friendDoc = snapshot.docs[0];
+            const friendId = friendDoc.id;
+
+            // Add friend relationship
+            await db.collection("users").doc(currentUser.uid)
+                .collection("friends").doc(friendId).set({
+                    userCode: code,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+            // Create chat document if doesn't exist
+            const chatId = getChatId(currentUser.uid, friendId);
+            await db.collection("chats").doc(chatId).set({
+                participants: [currentUser.uid, friendId],
+                lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            statusElement.innerText = "Friend added successfully!";
+            statusElement.className = "text-sm mt-2 px-2 text-green-500";
+            codeInput.value = "";
+
+            // Open chat with new friend
+            openChat(friendId, friendDoc.data().username);
+        }
+
+        async function updateUsername() {
+            const newUsername = document.getElementById("profile-username").value.trim();
+
+            if (!newUsername) {
+                showNotification("Username cannot be empty", false);
+                return;
+            }
+
+            try {
+                await db.collection("users").doc(currentUser.uid).update({
+                    username: newUsername
+                });
+
+                document.getElementById("profile-name").innerText = newUsername;
+                document.getElementById("sidebar-username").innerText = newUsername;
+                showNotification("Username updated successfully", true);
+            } catch (error) {
+                showNotification("Error updating username: " + error.message, false);
+            }
+        }
+
+        function showChangePassword() {
+            document.getElementById("change-password-modal").classList.remove("hidden");
+            document.getElementById("current-password").value = "";
+            document.getElementById("new-password").value = "";
+            document.getElementById("confirm-password").value = "";
+            document.getElementById("password-error").classList.add("hidden");
+        }
+
+        function hideChangePassword() {
+            document.getElementById("change-password-modal").classList.add("hidden");
+        }
+
+        async function updatePassword() {
+            const currentPassword = document.getElementById("current-password").value;
+            const newPassword = document.getElementById("new-password").value;
+            const confirmPassword = document.getElementById("confirm-password").value;
+            const errorElement = document.getElementById("password-error");
+
+            // Validate inputs
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                errorElement.innerText = "Please fill all fields";
+                errorElement.classList.remove("hidden");
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                errorElement.innerText = "Password must be at least 8 characters";
+                errorElement.classList.remove("hidden");
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                errorElement.innerText = "Passwords don't match";
+                errorElement.classList.remove("hidden");
+                return;
+            }
+
+            try {
+                // Reauthenticate user
+                const credential = firebase.auth.EmailAuthProvider.credential(
+                    currentUser.email,
+                    currentPassword
+                );
+
+                await currentUser.reauthenticateWithCredential(credential);
+
+                // Update password
+                await currentUser.updatePassword(newPassword);
+
+                showNotification("Password updated successfully", true);
+                hideChangePassword();
+            } catch (error) {
+                if (error.code === "auth/wrong-password") {
+                    errorElement.innerText = "Current password is incorrect";
+                } else {
+                    errorElement.innerText = "Error updating password: " + error.message;
+                }
+                errorElement.classList.remove("hidden");
+            }
+        }
+
+        function copyUserCode() {
+            const code = document.getElementById("profile-code").innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                showNotification("User code copied to clipboard", true);
+            });
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`${tab}-tab`).classList.remove('hidden');
+
+            // Update active tab button
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-blue-600', 'bg-blue-50');
+                btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+            });
+
+            document.querySelector(`.tab-btn[onclick="showTab('${tab}')"]`).classList.add('text-blue-600', 'bg-blue-50');
+            document.querySelector(`.tab-btn[onclick="showTab('${tab}')"]`).classList.remove('text-gray-600', 'hover:bg-gray-100');
+        }
+
+        function getChatId(uid1, uid2) {
+            return uid1 < uid2 ? uid1 + "_" + uid2 : uid2 + "_" + uid1;
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const diffInMinutes = Math.floor(diff / (1000 * 60));
+            const diffInHours = Math.floor(diff / (1000 * 60 * 60));
+            const diffInDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+            if (diffInMinutes < 1) {
+                return 'Just now';
+            } else if (diffInMinutes < 60) {
+                return `${diffInMinutes}m ago`;
+            } else if (diffInHours < 24) {
+                return `${diffInHours}h ago`;
+            } else if (diffInDays === 1) {
+                return 'Yesterday';
+            } else if (diffInDays < 7) {
+                return `${diffInDays}d ago`;
+            } else {
+                return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            }
+        }
+
+        function showNotification(message, success = true) {
+            const notification = document.getElementById("notification");
+            notification.textContent = message;
+            notification.className = success
+                ? "p-3 text-center text-white font-medium bg-green-500"
+                : "p-3 text-center text-white font-medium bg-red-500";
+            notification.classList.remove("hidden");
+
+            setTimeout(() => {
+                notification.classList.add("hidden");
+            }, 1000);
+        }
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById("emoji-picker");
+            picker.classList.toggle("hidden");
+
+            if (!picker.classList.contains("hidden")) {
+                // Simple emoji list - in a real app you might want a more comprehensive emoji picker
+                const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
+                    '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
+                    '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩',
+                    '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
+                    '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬'];
+
+                picker.innerHTML = '';
+                emojis.forEach(emoji => {
+                    const span = document.createElement("span");
+                    span.className = "text-2xl cursor-pointer mx-1 hover:bg-gray-100 rounded p-1";
+                    span.textContent = emoji;
+                    span.onclick = () => {
+                        const input = document.getElementById("message-input");
+                        input.value += emoji;
+                        picker.classList.add("hidden");
+                        input.focus();
+                    };
+                    picker.appendChild(span);
+                });
+            }
+        }
+
+        async function logout() {
+            try {
+                // Set user as offline before logging out
+                await db.collection("users").doc(currentUser.uid).update({
+                    status: "offline",
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await auth.signOut();
+                window.location.href = "chat.html";
+            } catch (error) {
+                showNotification("Error logging out: " + error.message, false);
+            }
+        }
+
+        // Clean up listeners when leaving the page
+        window.addEventListener('beforeunload', () => {
+            if (friendsUnsubscribe) friendsUnsubscribe();
+            if (onlineFriendsUnsubscribe) onlineFriendsUnsubscribe();
+            if (chatsUnsubscribe) chatsUnsubscribe();
+            if (unsubscribeMessages) unsubscribeMessages();
+            if (unsubscribeTyping) unsubscribeTyping();
+
+            // Set user as offline
+            if (currentUser) {
+                db.collection("users").doc(currentUser.uid).update({
+                    status: "offline",
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
