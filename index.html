@@ -241,7 +241,7 @@
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 const role = await getUserRole(user);
-                user.role = role; // add custom role to user object
+                user.role = role;
 
                 if (role !== "buyer") {
                     await auth.signOut();
