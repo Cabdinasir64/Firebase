@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chat App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body class="bg-gradient-to-br from-blue-100 to-purple-200 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md p-6 rounded-xl shadow-lg relative">
+        <h2 class="text-3xl font-bold text-center text-blue-600 mb-4">ChatApp</h2>
+
+        <!-- Notification -->
+        <div id="notification" class="hidden mb-4 text-center p-2 rounded text-white"></div>
+
+        <!-- Login Form -->
+        <div id="login-form">
+            <input id="login-email" type="email" placeholder="Email" class="w-full p-2 mb-3 border rounded" />
+            <input id="login-password" type="password" placeholder="Password" class="w-full p-2 mb-3 border rounded" />
+            <button onclick="login()"
+                class="w-full bg-blue-500 text-white p-2 rounded mb-2 hover:bg-blue-600">Login</button>
+            <p class="text-center text-sm">Don't have an account? <a href="#" onclick="toggleForms()"
+                    class="text-blue-600 hover:underline">Sign up</a></p>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-form" class="hidden">
+            <input id="signup-username" type="text" placeholder="Username" class="w-full p-2 mb-3 border rounded" />
+            <input id="signup-email" type="email" placeholder="Email" class="w-full p-2 mb-3 border rounded" />
+            <input id="signup-password" type="password" placeholder="Password" class="w-full p-2 mb-3 border rounded" />
+            <button onclick="signup()" class="w-full bg-green-500 text-white p-2 rounded mb-2 hover:bg-green-600">Create
+                Account</button>
+            <p class="text-center text-sm">Already have an account? <a href="#" onclick="toggleForms()"
+                    class="text-green-600 hover:underline">Login</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj7DO_yftf1ViNQ0l5hrPBkbFFgc9un_8",
+            authDomain: "tests-18ea8.firebaseapp.com",
+            projectId: "tests-18ea8",
+            storageBucket: "tests-18ea8.appspot.com",
+            messagingSenderId: "35376357331",
+            appId: "1:35376357331:web:2d70f7605428112b8c1926",
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const loginForm = document.getElementById("login-form");
+        const signupForm = document.getElementById("signup-form");
+        const notification = document.getElementById("notification");
+
+        function toggleForms() {
+            loginForm.classList.toggle("hidden");
+            signupForm.classList.toggle("hidden");
+            hideNotification();
+        }
+
+        function showNotification(message, success = true) {
+            notification.textContent = message;
+            notification.className = success
+                ? "mb-4 text-center p-2 rounded bg-green-500 text-white"
+                : "mb-4 text-center p-2 rounded bg-red-500 text-white";
+            notification.classList.remove("hidden");
+        }
+
+        function hideNotification() {
+            notification.classList.add("hidden");
+        }
+
+        function generateUserId() {
+            return Math.floor(10000000 + Math.random() * 90000000).toString();
+        }
+
+        async function signup() {
+            const username = document.getElementById("signup-username").value.trim();
+            const email = document.getElementById("signup-email").value.trim();
+            const password = document.getElementById("signup-password").value;
+
+            if (!username || !email || !password) {
+                showNotification("Please fill all fields.", false);
+                return;
+            }
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const uid = userCredential.user.uid;
+                const userCode = generateUserId();
+
+                await db.collection("users").doc(uid).set({
+                    username,
+                    email,
+                    userCode
+                });
+
+                showNotification("Account created successfully! Redirecting...", true);
+                setTimeout(() => {
+                    //   window.location.href = "chat_dashboard.html";
+                }, 3000);
+
+            } catch (error) {
+                showNotification("Signup error: " + error.message, false);
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById("login-email").value.trim();
+            const password = document.getElementById("login-password").value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showNotification("Login successful! Redirecting...", true);
+                setTimeout(() => {
+                    //   window.location.href = "chat_dashboard.html";
+                }, 3000);
+
+            } catch (error) {
+                showNotification("Login error: " + error.message, false);
+            }
+        }
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // window.location.href = "chat_dashboard.html";
+            }
+        });
+    </script>
+</body>
+
+</html>
