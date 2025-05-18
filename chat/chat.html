@@ -3,40 +3,150 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Chat App</title>
+    <title>ChatVerse - Connect with Friends</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A modern chat application to connect with friends">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <style>
+        .auth-transition {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+    </style>
 </head>
 
-<body class="bg-gradient-to-br from-blue-100 to-purple-200 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md p-6 rounded-xl shadow-lg relative">
-        <h2 class="text-3xl font-bold text-center text-blue-600 mb-4">ChatApp</h2>
+<body class="bg-gradient-to-br from-indigo-100 to-purple-200 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white/90 backdrop-blur-sm w-full max-w-md p-8 rounded-xl shadow-2xl relative overflow-hidden">
+        <!-- Decorative elements -->
+        <div class="absolute -top-10 -right-10 w-20 h-20 bg-blue-200 rounded-full opacity-20"></div>
+        <div class="absolute -bottom-10 -left-10 w-24 h-24 bg-purple-200 rounded-full opacity-20"></div>
 
-        <!-- Notification -->
-        <div id="notification" class="hidden mb-4 text-center p-2 rounded text-white"></div>
+        <div class="relative z-10">
+            <div class="flex justify-center mb-6">
+                <i class="fas fa-comments text-4xl text-blue-500 mr-3"></i>
+                <h2
+                    class="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                    ChatVerse</h2>
+            </div>
 
-        <!-- Login Form -->
-        <div id="login-form">
-            <input id="login-email" type="email" placeholder="Email" class="w-full p-2 mb-3 border rounded" />
-            <input id="login-password" type="password" placeholder="Password" class="w-full p-2 mb-3 border rounded" />
-            <button onclick="login()"
-                class="w-full bg-blue-500 text-white p-2 rounded mb-2 hover:bg-blue-600">Login</button>
-            <p class="text-center text-sm">Don't have an account? <a href="#" onclick="toggleForms()"
-                    class="text-blue-600 hover:underline">Sign up</a></p>
-        </div>
+            <!-- Notification -->
+            <div id="notification"
+                class="hidden mb-4 text-center p-3 rounded-lg text-white font-medium transition-all duration-300 transform">
+            </div>
 
-        <!-- Signup Form -->
-        <div id="signup-form" class="hidden">
-            <input id="signup-username" type="text" placeholder="Username" class="w-full p-2 mb-3 border rounded" />
-            <input id="signup-email" type="email" placeholder="Email" class="w-full p-2 mb-3 border rounded" />
-            <input id="signup-password" type="password" placeholder="Password" class="w-full p-2 mb-3 border rounded" />
-            <button onclick="signup()" class="w-full bg-green-500 text-white p-2 rounded mb-2 hover:bg-green-600">Create
-                Account</button>
-            <p class="text-center text-sm">Already have an account? <a href="#" onclick="toggleForms()"
-                    class="text-green-600 hover:underline">Login</a></p>
+            <!-- Login Form -->
+            <div id="login-form" class="auth-transition">
+                <div class="mb-4">
+                    <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-envelope text-gray-400"></i>
+                        </div>
+                        <input id="login-email" type="email" placeholder="your@email.com"
+                            class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" />
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input id="login-password" type="password" placeholder="••••••••"
+                            class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" />
+                    </div>
+                </div>
+                <button onclick="login()"
+                    class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 rounded-lg mb-3 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all flex items-center justify-center">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Login
+                </button>
+                <div class="text-center text-sm text-gray-600">
+                    Don't have an account?
+                    <a href="#" onclick="toggleForms()"
+                        class="font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors">Sign
+                        up</a>
+                </div>
+                <div class="mt-4 text-center">
+                    <button onclick="loginWithGoogle()"
+                        class="text-sm text-gray-600 hover:text-gray-800 transition-colors">
+                        <i class="fab fa-google mr-1 text-red-500"></i> Sign in with Google
+                    </button>
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signup-form" class="auth-transition hidden">
+                <div class="mb-4">
+                    <label for="signup-username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input id="signup-username" type="text" placeholder="Your name"
+                            class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" />
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-envelope text-gray-400"></i>
+                        </div>
+                        <input id="signup-email" type="email" placeholder="your@email.com"
+                            class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" />
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input id="signup-password" type="password" placeholder="••••••••"
+                            class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" />
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <i id="password-toggle"
+                                class="fas fa-eye-slash text-gray-400 cursor-pointer hover:text-gray-600"
+                                onclick="togglePasswordVisibility('signup-password')"></i>
+                        </div>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">Use 8+ characters with a mix of letters, numbers & symbols</p>
+                </div>
+                <button onclick="signup()"
+                    class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded-lg mb-3 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all flex items-center justify-center">
+                    <i class="fas fa-user-plus mr-2"></i> Create Account
+                </button>
+                <div class="text-center text-sm text-gray-600">
+                    Already have an account?
+                    <a href="#" onclick="toggleForms()"
+                        class="font-medium text-green-600 hover:text-green-800 hover:underline transition-colors">Login</a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -54,6 +164,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        const provider = new firebase.auth.GoogleAuthProvider();
 
         const loginForm = document.getElementById("login-form");
         const signupForm = document.getElementById("signup-form");
@@ -65,12 +176,27 @@
             hideNotification();
         }
 
+        function togglePasswordVisibility(fieldId) {
+            const field = document.getElementById(fieldId);
+            const icon = document.getElementById("password-toggle");
+            if (field.type === "password") {
+                field.type = "text";
+                icon.classList.replace("fa-eye-slash", "fa-eye");
+            } else {
+                field.type = "password";
+                icon.classList.replace("fa-eye", "fa-eye-slash");
+            }
+        }
+
         function showNotification(message, success = true) {
             notification.textContent = message;
             notification.className = success
-                ? "mb-4 text-center p-2 rounded bg-green-500 text-white"
-                : "mb-4 text-center p-2 rounded bg-red-500 text-white";
+                ? "bg-green-500 mb-4 text-center p-3 rounded-lg text-white font-medium transition-all duration-300 transform"
+                : "bg-red-500 mb-4 text-center p-3 rounded-lg text-white font-medium transition-all duration-300 transform shake";
             notification.classList.remove("hidden");
+
+            // Auto-hide after 5 seconds
+            setTimeout(hideNotification, 5000);
         }
 
         function hideNotification() {
@@ -91,7 +217,14 @@
                 return;
             }
 
+            if (password.length < 8) {
+                showNotification("Password must be at least 8 characters.", false);
+                return;
+            }
+
             try {
+                showNotification("Creating your account...", true);
+
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const uid = userCredential.user.uid;
                 const userCode = generateUserId();
@@ -99,16 +232,23 @@
                 await db.collection("users").doc(uid).set({
                     username,
                     email,
-                    userCode
+                    userCode,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: "online"
                 });
 
                 showNotification("Account created successfully! Redirecting...", true);
                 setTimeout(() => {
                     window.location.href = "chat_dashbaord.html";
-                }, 3000);
+                }, 2000);
 
             } catch (error) {
-                showNotification("Signup error: " + error.message, false);
+                let errorMessage = "Signup error: " + error.message;
+                if (error.code === "auth/email-already-in-use") {
+                    errorMessage = "This email is already registered. Please login instead.";
+                }
+                showNotification(errorMessage, false);
             }
         }
 
@@ -116,23 +256,74 @@
             const email = document.getElementById("login-email").value.trim();
             const password = document.getElementById("login-password").value;
 
+            if (!email || !password) {
+                showNotification("Please enter both email and password.", false);
+                return;
+            }
+
             try {
+                showNotification("Logging in...", true);
                 await auth.signInWithEmailAndPassword(email, password);
+
+                // Update user status to online
+                const user = auth.currentUser;
+                if (user) {
+                    await db.collection("users").doc(user.uid).update({
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: "online"
+                    });
+                }
+
                 showNotification("Login successful! Redirecting...", true);
                 setTimeout(() => {
                     window.location.href = "chat_dashbaord.html";
-                }, 3000);
+                }, 2000);
 
             } catch (error) {
-                showNotification("Login error: " + error.message, false);
+                let errorMessage = "Login error: " + error.message;
+                if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+                    errorMessage = "Invalid email or password. Please try again.";
+                }
+                showNotification(errorMessage, false);
             }
         }
 
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                window.location.href = "chat_dashbaord.html";
+        async function loginWithGoogle() {
+            try {
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+
+                // Check if user exists in Firestore
+                const userDoc = await db.collection("users").doc(user.uid).get();
+
+                if (!userDoc.exists) {
+                    // New user - create profile
+                    const userCode = generateUserId();
+                    await db.collection("users").doc(user.uid).set({
+                        username: user.displayName || "Google User",
+                        email: user.email,
+                        userCode,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: "online",
+                        photoURL: user.photoURL || ""
+                    });
+                } else {
+                    // Existing user - update last seen
+                    await db.collection("users").doc(user.uid).update({
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: "online"
+                    });
+                }
+
+                showNotification("Google login successful! Redirecting...", true);
+                setTimeout(() => {
+                    window.location.href = "chat.html";
+                }, 2000);
+            } catch (error) {
+                showNotification("Google login error: " + error.message, false);
             }
-        });
+        }
     </script>
 </body>
 
