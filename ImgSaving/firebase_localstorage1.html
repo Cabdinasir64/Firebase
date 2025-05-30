@@ -27,6 +27,11 @@
             <div>
                 <label for="userImage" class="block mb-1 font-medium">Sawirka (localStorage):</label>
                 <input id="userImage" type="file" accept="image/*" class="w-full" />
+                <!-- Current image preview container -->
+                <div id="currentImageContainer" class="mt-2 hidden">
+                    <p class="text-sm text-gray-600 mb-1">Current Image:</p>
+                    <img id="currentImage" src="" class="w-20 h-20 object-cover rounded border" />
+                </div>
             </div>
             <div class="flex space-x-2">
                 <button id="addButton" type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded">Add
@@ -62,10 +67,11 @@
         const userIdInput = document.getElementById("userId");
         const addButton = document.getElementById("addButton");
         const updateButton = document.getElementById("updateButton");
-
         const userNameInput = document.getElementById("userName");
         const userEmailInput = document.getElementById("userEmail");
         const userImageInput = document.getElementById("userImage");
+        const currentImageContainer = document.getElementById("currentImageContainer");
+        const currentImage = document.getElementById("currentImage");
 
         // Load users live
         function loadUsers() {
@@ -115,19 +121,31 @@
                 alert("User cusub waa la keydiyay.");
                 userForm.reset();
                 showAddButton();
+                currentImageContainer.classList.add("hidden");
             };
             reader.readAsDataURL(imageFile);
         });
 
-        // Edit user
+        // Edit user - shows current image
         window.editUser = function (id, name, email) {
             userIdInput.value = id;
             userNameInput.value = name;
             userEmailInput.value = email;
-            userImageInput.value =  reader.readAsDataURL(imageFile);
+
+            // Show current image if it exists in localStorage
+            const currentImgSrc = localStorage.getItem(id);
+            if (currentImgSrc) {
+                currentImage.src = currentImgSrc;
+                currentImageContainer.classList.remove("hidden");
+            } else {
+                currentImageContainer.classList.add("hidden");
+            }
+
             showUpdateButton();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
+        // Update user
         updateButton.addEventListener("click", async (e) => {
             e.preventDefault();
             const id = userIdInput.value;
@@ -150,15 +168,18 @@
                     alert("Xogta waa la cusboonaysiiyay (image + text).");
                     userForm.reset();
                     showAddButton();
+                    currentImageContainer.classList.add("hidden");
                 };
                 reader.readAsDataURL(imageFile);
             } else {
                 alert("Xogta waa la cusboonaysiiyay (text).");
                 userForm.reset();
                 showAddButton();
+                currentImageContainer.classList.add("hidden");
             }
         });
 
+        // Delete user
         window.deleteUser = async function (id) {
             if (confirm("Ma hubtaa inaad tirtirayso user-kan?")) {
                 await db.collection("users").doc(id).delete();
@@ -177,6 +198,7 @@
         function showUpdateButton() {
             addButton.classList.add("hidden");
             updateButton.classList.remove("hidden");
+            userImageInput.required = false;
         }
     </script>
 </body>
