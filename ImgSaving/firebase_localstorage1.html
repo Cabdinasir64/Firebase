@@ -62,9 +62,9 @@
                 <input id="userImage" type="file" accept="image/*" class="w-full custom-file-input"
                     data-text="No file chosen" />
                 <!-- Current image preview container -->
-                <div id="currentImageContainer" class="mt-2 hidden">
-                    <p class="text-sm text-gray-600 mb-1">Current Image:</p>
-                    <img id="currentImage" src="" class="w-20 h-20 object-cover rounded border" />
+                <div id="currentImageContainer" class="mt-2 hidden mx-auto flex items-center justify-center flex-col">
+                    <p class="text-xl text-gray-600 mb-1">Current Image:</p>
+                    <img id="currentImage" src="" class="w-40 h-40 object-cover rounded border" />
                 </div>
             </div>
             <div class="flex space-x-2">
@@ -167,15 +167,13 @@
             reader.readAsDataURL(imageFile);
         });
 
-        // Edit user - shows current image
         window.editUser = function (id, name, email) {
             userIdInput.value = id;
             userNameInput.value = name;
             userEmailInput.value = email;
             userImageInput.value = '';
-            userImageInput.setAttribute('data-text', 'Current image (select to change)');
+            userImageInput.setAttribute('data-text', 'Current image');
 
-            // Show current image if it exists in localStorage
             const currentImgSrc = localStorage.getItem(id);
             if (currentImgSrc) {
                 currentImage.src = currentImgSrc;
