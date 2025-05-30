@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Firestore + localStorage1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
+        <h1 class="text-2xl font-bold mb-6 text-center">User Info CRUD</h1>
+
+        <form id="userForm" class="space-y-4">
+            <input type="hidden" id="userId" />
+            <div>
+                <label for="userName" class="block mb-1 font-medium">Magacaaga:</label>
+                <input id="userName" type="text" placeholder="Geli magacaaga" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+                <label for="userEmail" class="block mb-1 font-medium">Email-kaaga:</label>
+                <input id="userEmail" type="email" placeholder="Geli emailkaaga" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+                <label for="userImage" class="block mb-1 font-medium">Sawirka (localStorage):</label>
+                <input id="userImage" type="file" accept="image/*" required class="w-full" />
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition">
+                Kaydi Macluumaadka
+            </button>
+        </form>
+
+        <div id="usersList" class="mt-8">
+            <h2 class="text-xl font-semibold mb-4">Users List:</h2>
+            <ul id="userItems" class="space-y-4"></ul>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+    <!-- Foomka isma bedelayaan, waxa bedelmay script-ka -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGoCfGoL4danr_jQIZ6RWADnJYlvplRX8",
+            authDomain: "test-bc2e2.firebaseapp.com",
+            projectId: "test-bc2e2",
+            storageBucket: "test-bc2e2.appspot.com",
+            messagingSenderId: "139966370437",
+            appId: "1:139966370437:web:f9cd7bb09461887b33cfec",
+            measurementId: "G-KDF9EKBF3C"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const userForm = document.getElementById("userForm");
+        const userItems = document.getElementById("userItems");
+
+        function loadUsers() {
+            userItems.innerHTML = "";
+            db.collection("users").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+                userItems.innerHTML = ""; // Clear the list first
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    const li = document.createElement("li");
+                    li.className = "bg-gray-50 p-4 rounded shadow flex items-center justify-between";
+                    const imgSrc = localStorage.getItem(doc.id) || "https://via.placeholder.com/100";
+
+                    li.innerHTML = `
+            <div>
+                <p><strong>${user.name}</strong> (${user.email})</p>
+                <img src="${imgSrc}" class="w-20 h-20 object-cover rounded mt-2">
+            </div>
+            <div>
+                <button onclick="editUser('${doc.id}', '${user.name}', '${user.email}')" class="text-blue-500 mr-2">Edit</button>
+                <button onclick="deleteUser('${doc.id}')" class="text-red-500">Delete</button>
+            </div>
+        `;
+                    userItems.appendChild(li);
+                });
+            });
+        }
+
+        window.onload = loadUsers;
+
+        userForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const name = document.getElementById("userName").value.trim();
+            const email = document.getElementById("userEmail").value.trim();
+            const imageFile = document.getElementById("userImage").files[0];
+            const userId = document.getElementById("userId").value;
+
+            if (!name || !email) {
+                alert("Fadlan buuxi magaca iyo emailka.");
+                return;
+            }
+
+            // Haddii userId jiro, waa edit
+            if (userId) {
+                db.collection("users").doc(userId).update({ name, email })
+                    .then(() => {
+                        if (imageFile) {
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                const base64Image = event.target.result;
+                                localStorage.setItem(userId, base64Image);
+                                alert("Xogta waa la cusboonaysiiyay (image + text).");
+                                userForm.reset();
+                                loadUsers();
+                                document.getElementById("userId").value = "";
+                            };
+                            reader.readAsDataURL(imageFile);
+                        } else {
+                            alert("Xogta waa la cusboonaysiiyay (text).");
+                            userForm.reset();
+                            loadUsers();
+                            document.getElementById("userId").value = "";
+                        }
+                    });
+            } else {
+                // New user
+                if (!imageFile) {
+                    alert("Fadlan dooro sawir user cusub.");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const base64Image = event.target.result;
+                    db.collection("users").add({
+                        name,
+                        email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(docRef => {
+                        localStorage.setItem(docRef.id, base64Image);
+                        alert("User cusub waa la keydiyay.");
+                        userForm.reset();
+                        loadUsers();
+                    });
+                };
+                reader.readAsDataURL(imageFile);
+            }
+        });
+
+        function editUser(id, name, email) {
+            document.getElementById("userId").value = id;
+            document.getElementById("userName").value = name;
+            document.getElementById("userEmail").value = email;
+            // Image lama buuxinayo input, laakiin waa la buuxin karaa liiska
+        }
+
+        function deleteUser(id) {
+            if (confirm("Ma hubtaa inaad tirtirayso user-kan?")) {
+                db.collection("users").doc(id).delete().then(() => {
+                    localStorage.removeItem(id);
+                    alert("User waa la tirtiray.");
+                    loadUsers();
+                });
+            }
+        }
+    </script>
+
+</body>
+
+</html>
