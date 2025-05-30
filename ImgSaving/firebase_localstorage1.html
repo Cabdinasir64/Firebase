@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Firestore + localStorage1</title>
+    <title>Firestore + localStorage CRUD</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -17,20 +17,23 @@
             <div>
                 <label for="userName" class="block mb-1 font-medium">Magacaaga:</label>
                 <input id="userName" type="text" placeholder="Geli magacaaga" required
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    class="w-full border rounded px-3 py-2" />
             </div>
             <div>
                 <label for="userEmail" class="block mb-1 font-medium">Email-kaaga:</label>
                 <input id="userEmail" type="email" placeholder="Geli emailkaaga" required
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    class="w-full border rounded px-3 py-2" />
             </div>
             <div>
                 <label for="userImage" class="block mb-1 font-medium">Sawirka (localStorage):</label>
-                <input id="userImage" type="file" accept="image/*" required class="w-full" />
+                <input id="userImage" type="file" accept="image/*" class="w-full" />
             </div>
-            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition">
-                Kaydi Macluumaadka
-            </button>
+            <div class="flex space-x-2">
+                <button id="addButton" type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded">Add
+                    User</button>
+                <button id="updateButton" type="button"
+                    class="flex-1 bg-green-600 text-white py-2 rounded hidden">Update User</button>
+            </div>
         </form>
 
         <div id="usersList" class="mt-8">
@@ -42,7 +45,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-    <!-- Foomka isma bedelayaan, waxa bedelmay script-ka -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDGoCfGoL4danr_jQIZ6RWADnJYlvplRX8",
@@ -50,118 +52,133 @@
             projectId: "test-bc2e2",
             storageBucket: "test-bc2e2.appspot.com",
             messagingSenderId: "139966370437",
-            appId: "1:139966370437:web:f9cd7bb09461887b33cfec",
-            measurementId: "G-KDF9EKBF3C"
+            appId: "1:139966370437:web:f9cd7bb09461887b33cfec"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         const userForm = document.getElementById("userForm");
         const userItems = document.getElementById("userItems");
+        const userIdInput = document.getElementById("userId");
+        const addButton = document.getElementById("addButton");
+        const updateButton = document.getElementById("updateButton");
 
+        const userNameInput = document.getElementById("userName");
+        const userEmailInput = document.getElementById("userEmail");
+        const userImageInput = document.getElementById("userImage");
+
+        // Load users live
         function loadUsers() {
-            userItems.innerHTML = "";
             db.collection("users").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-                userItems.innerHTML = ""; // Clear the list first
+                userItems.innerHTML = "";
                 snapshot.forEach(doc => {
                     const user = doc.data();
+                    const imgSrc = localStorage.getItem(doc.id) || "https://via.placeholder.com/100";
                     const li = document.createElement("li");
                     li.className = "bg-gray-50 p-4 rounded shadow flex items-center justify-between";
-                    const imgSrc = localStorage.getItem(doc.id) || "https://via.placeholder.com/100";
-
                     li.innerHTML = `
-            <div>
-                <p><strong>${user.name}</strong> (${user.email})</p>
-                <img src="${imgSrc}" class="w-20 h-20 object-cover rounded mt-2">
-            </div>
-            <div>
-                <button onclick="editUser('${doc.id}', '${user.name}', '${user.email}')" class="text-blue-500 mr-2">Edit</button>
-                <button onclick="deleteUser('${doc.id}')" class="text-red-500">Delete</button>
-            </div>
-        `;
+                        <div>
+                            <p><strong>${user.name}</strong> (${user.email})</p>
+                            <img src="${imgSrc}" class="w-20 h-20 object-cover rounded mt-2">
+                        </div>
+                        <div>
+                            <button onclick="editUser('${doc.id}', '${user.name}', '${user.email}')" class="text-blue-500 mr-2">Edit</button>
+                            <button onclick="deleteUser('${doc.id}')" class="text-red-500">Delete</button>
+                        </div>
+                    `;
                     userItems.appendChild(li);
                 });
             });
         }
 
-        window.onload = loadUsers;
+        loadUsers();
 
-        userForm.addEventListener("submit", (e) => {
+        // Add new user
+        addButton.addEventListener("click", async (e) => {
             e.preventDefault();
-            const name = document.getElementById("userName").value.trim();
-            const email = document.getElementById("userEmail").value.trim();
-            const imageFile = document.getElementById("userImage").files[0];
-            const userId = document.getElementById("userId").value;
+            const name = userNameInput.value.trim();
+            const email = userEmailInput.value.trim();
+            const imageFile = userImageInput.files[0];
+
+            if (!name || !email || !imageFile) {
+                alert("Fadlan buuxi dhammaan xogta.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function (event) {
+                const base64Image = event.target.result;
+                const docRef = await db.collection("users").add({
+                    name, email, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                localStorage.setItem(docRef.id, base64Image);
+                alert("User cusub waa la keydiyay.");
+                userForm.reset();
+                showAddButton();
+            };
+            reader.readAsDataURL(imageFile);
+        });
+
+        // Edit user
+        window.editUser = function (id, name, email) {
+            userIdInput.value = id;
+            userNameInput.value = name;
+            userEmailInput.value = email;
+            userImageInput.value =  reader.readAsDataURL(imageFile);
+            showUpdateButton();
+        };
+
+        updateButton.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const id = userIdInput.value;
+            const name = userNameInput.value.trim();
+            const email = userEmailInput.value.trim();
+            const imageFile = userImageInput.files[0];
 
             if (!name || !email) {
                 alert("Fadlan buuxi magaca iyo emailka.");
                 return;
             }
 
-            // Haddii userId jiro, waa edit
-            if (userId) {
-                db.collection("users").doc(userId).update({ name, email })
-                    .then(() => {
-                        if (imageFile) {
-                            const reader = new FileReader();
-                            reader.onload = function (event) {
-                                const base64Image = event.target.result;
-                                localStorage.setItem(userId, base64Image);
-                                alert("Xogta waa la cusboonaysiiyay (image + text).");
-                                userForm.reset();
-                                loadUsers();
-                                document.getElementById("userId").value = "";
-                            };
-                            reader.readAsDataURL(imageFile);
-                        } else {
-                            alert("Xogta waa la cusboonaysiiyay (text).");
-                            userForm.reset();
-                            loadUsers();
-                            document.getElementById("userId").value = "";
-                        }
-                    });
-            } else {
-                // New user
-                if (!imageFile) {
-                    alert("Fadlan dooro sawir user cusub.");
-                    return;
-                }
+            await db.collection("users").doc(id).update({ name, email });
+
+            if (imageFile) {
                 const reader = new FileReader();
                 reader.onload = function (event) {
                     const base64Image = event.target.result;
-                    db.collection("users").add({
-                        name,
-                        email,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }).then(docRef => {
-                        localStorage.setItem(docRef.id, base64Image);
-                        alert("User cusub waa la keydiyay.");
-                        userForm.reset();
-                        loadUsers();
-                    });
+                    localStorage.setItem(id, base64Image);
+                    alert("Xogta waa la cusboonaysiiyay (image + text).");
+                    userForm.reset();
+                    showAddButton();
                 };
                 reader.readAsDataURL(imageFile);
+            } else {
+                alert("Xogta waa la cusboonaysiiyay (text).");
+                userForm.reset();
+                showAddButton();
             }
         });
 
-        function editUser(id, name, email) {
-            document.getElementById("userId").value = id;
-            document.getElementById("userName").value = name;
-            document.getElementById("userEmail").value = email;
-            // Image lama buuxinayo input, laakiin waa la buuxin karaa liiska
+        window.deleteUser = async function (id) {
+            if (confirm("Ma hubtaa inaad tirtirayso user-kan?")) {
+                await db.collection("users").doc(id).delete();
+                localStorage.removeItem(id);
+                alert("User waa la tirtiray.");
+            }
+        };
+
+        function showAddButton() {
+            addButton.classList.remove("hidden");
+            updateButton.classList.add("hidden");
+            userImageInput.required = true;
+            userIdInput.value = "";
         }
 
-        function deleteUser(id) {
-            if (confirm("Ma hubtaa inaad tirtirayso user-kan?")) {
-                db.collection("users").doc(id).delete().then(() => {
-                    localStorage.removeItem(id);
-                    alert("User waa la tirtiray.");
-                    loadUsers();
-                });
-            }
+        function showUpdateButton() {
+            addButton.classList.add("hidden");
+            updateButton.classList.remove("hidden");
         }
     </script>
-
 </body>
 
 </html>
