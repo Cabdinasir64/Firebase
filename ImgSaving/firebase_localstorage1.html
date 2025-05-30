@@ -107,7 +107,6 @@
         const currentImageContainer = document.getElementById("currentImageContainer");
         const currentImage = document.getElementById("currentImage");
 
-        // Update file input text when file is selected
         userImageInput.addEventListener('change', function () {
             if (this.files.length > 0) {
                 this.setAttribute('data-text', this.files[0].name);
@@ -116,7 +115,6 @@
             }
         });
 
-        // Load users live
         function loadUsers() {
             db.collection("users").orderBy("createdAt", "desc").onSnapshot(snapshot => {
                 userItems.innerHTML = "";
@@ -142,7 +140,6 @@
 
         loadUsers();
 
-        // Add new user
         addButton.addEventListener("click", async (e) => {
             e.preventDefault();
             const name = userNameInput.value.trim();
